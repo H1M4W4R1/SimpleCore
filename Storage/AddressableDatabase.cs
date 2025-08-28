@@ -16,6 +16,11 @@ namespace Systems.SimpleCore.Storage
         where TScriptableObject : ScriptableObject
     {
         /// <summary>
+        ///     Quick access to instance
+        /// </summary>
+        public static TSelf Instance => _instance;
+        
+        /// <summary>
         ///     Label of addressable assets
         /// </summary>
         protected abstract string AddressableLabel { get; }
