@@ -23,12 +23,10 @@ namespace Systems.SimpleCore.Saving.Utility
         ///     Save file as default file if possible, otherwise as first supported file type.
         /// </summary>
         /// <param name="saveable">Object to save</param>
-        /// <param name="instanceFactory">Factory for creating instances of save files</param>
         /// <returns>Save file</returns>
         /// <exception cref="InvalidOperationException">Thrown if no default save file type is provided and no supported file types are declared.</exception>
         [NotNull] public static SaveFileBase Save(
-            [NotNull] ISaveable saveable,
-            [CanBeNull] Func<Type, object> instanceFactory = null)
+            [NotNull] ISaveable saveable)
         {
             Assert.IsNotNull(saveable, "Saveable cannot be null.");
 
@@ -45,34 +43,30 @@ namespace Systems.SimpleCore.Saving.Utility
                 targetType = supported[0];
             }
 
-            return SaveAs(saveable, targetType, instanceFactory);
+            return SaveAs(saveable, targetType);
         }
 
         /// <summary>
         ///     Save object as specific file type.
         /// </summary>
         /// <param name="saveable">Object to save</param>
-        /// <param name="instanceFactory">Factory for creating instances of save files</param>
         /// <typeparam name="TSaveFile">Type of save file</typeparam>
         /// <returns>Save file</returns>
         /// <exception cref="InvalidOperationException">Thrown if the saveable cannot be saved as the given type.</exception>
         [NotNull] public static SaveFileBase SaveAs<TSaveFile>(
-            [NotNull] ISaveable saveable,
-            [CanBeNull] Func<Type, object> instanceFactory = null)
-            where TSaveFile : SaveFileBase => SaveAs(saveable, typeof(TSaveFile), instanceFactory);
+            [NotNull] ISaveable saveable)
+            where TSaveFile : SaveFileBase => SaveAs(saveable, typeof(TSaveFile));
 
         /// <summary>
         ///     Save object as specific file type.
         /// </summary>
         /// <param name="saveable">Object to save</param>
         /// <param name="targetSaveFileType">Type of save file</param>
-        /// <param name="instanceFactory">Factory for creating instances of save files</param>
         /// <returns>Save file</returns>
         /// <exception cref="InvalidOperationException">Thrown if the saveable cannot be saved as the given type.</exception>
         [NotNull] public static SaveFileBase SaveAs(
             [NotNull] ISaveable saveable,
-            [NotNull] Type targetSaveFileType,
-            [CanBeNull] Func<Type, object> instanceFactory = null)
+            [NotNull] Type targetSaveFileType)
         {
             Assert.IsNotNull(saveable, "Saveable cannot be null.");
             Assert.IsNotNull(targetSaveFileType, "Target save file type cannot be null.");
@@ -106,7 +100,7 @@ namespace Systems.SimpleCore.Saving.Utility
             SaveFileBase current = (SaveFileBase) InvokeInterfaceSave(saveable, bestStart);
 
             // Apply conversion chain
-            current = ApplyConversionChain(current, bestPath.Value.Steps, instanceFactory);
+            current = ApplyConversionChain(current, bestPath.Value.Steps);
 
             if (!targetSaveFileType.IsInstanceOfType(current))
                 throw new InvalidOperationException("Conversion chain did not produce the requested target type.");
@@ -120,13 +114,11 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <param name="saveable">Object to load into</param>
         /// <param name="file">File to load</param>
         /// <param name="fileType">Type of file</param>
-        /// <param name="instanceFactory">Factory for creating instances of save files</param>
         /// <exception cref="InvalidOperationException">Thrown if the file cannot be loaded into the object.</exception>
         public static void Load(
             [NotNull] ISaveable saveable,
             [NotNull] SaveFileBase file,
-            [NotNull] Type fileType,
-            [CanBeNull] Func<Type, object> instanceFactory = null)
+            [NotNull] Type fileType)
         {
             Assert.IsNotNull(saveable, "Saveable object cannot be null");
             Assert.IsNotNull(file, "File object cannot be null");
@@ -136,7 +128,6 @@ namespace Systems.SimpleCore.Saving.Utility
 
             // If the provided runtime file doesn't match the provided fileType, prefer file.GetType() but still allow fileType parameter.
             if (!fileType.IsInstanceOfType(file)) fileType = file.GetType(); // Use actual file type if mismatch
-
 
             IReadOnlyList<Type> supportedTypes = saveable.GetAllSupportedFileTypes();
 
@@ -150,8 +141,9 @@ namespace Systems.SimpleCore.Saving.Utility
             // Otherwise find conversion path from incoming fileType to one of supported types
             TransitionInfo? bestPath = null;
             Type bestTargetType = null;
-            foreach (Type desired in supportedTypes)
+            for (int desiredTypeIndex = 0; desiredTypeIndex < supportedTypes.Count; desiredTypeIndex++)
             {
+                Type desired = supportedTypes[desiredTypeIndex];
                 TransitionInfo path = ComputeTransitionPath(fileType, desired);
                 if (!path.IsPossible) continue;
                 if (bestPath != null && path.Steps.Count >= bestPath.Value.Steps.Count) continue;
@@ -164,7 +156,7 @@ namespace Systems.SimpleCore.Saving.Utility
                     $"No conversion path found from incoming type {fileType.Name} to any of the object's supported file types [{string.Join(", ", supportedTypes.Select(t => t.Name))}].");
 
             // Apply conversion chain to transform 'file' into desired supported type
-            SaveFileBase transformed = ApplyConversionChain(file, bestPath.Value.Steps, instanceFactory);
+            SaveFileBase transformed = ApplyConversionChain(file, bestPath.Value.Steps);
 
             // Finally call Load on the object's interface for the resulting type
             InvokeInterfaceLoad(saveable, bestTargetType, transformed);
@@ -175,16 +167,14 @@ namespace Systems.SimpleCore.Saving.Utility
         /// </summary>
         /// <param name="saveable">Object to load into</param>
         /// <param name="file">File to load</param>
-        /// <param name="instanceFactory">Factory for creating instances of save files</param>
         /// <typeparam name="TFile">Type of file</typeparam>
         /// <exception cref="InvalidOperationException">Thrown if the file cannot be loaded into the object.</exception>
         public static void Load<TFile>(
             [NotNull] ISaveable saveable,
-            [NotNull] SaveFileBase file,
-            [CanBeNull] Func<Type, object> instanceFactory = null)
+            [NotNull] SaveFileBase file)
             where TFile : SaveFileBase
         {
-            Load(saveable, file, typeof(TFile), instanceFactory);
+            Load(saveable, file, typeof(TFile));
         }
 
         /// <summary>
@@ -192,18 +182,16 @@ namespace Systems.SimpleCore.Saving.Utility
         /// </summary>
         /// <param name="saveable">Object to load into</param>
         /// <param name="file">File to load</param>
-        /// <param name="instanceFactory">Factory for creating instances of save files</param>
         /// <exception cref="InvalidOperationException">Thrown if the file cannot be loaded into the object.</exception>
         public static void Load(
             [NotNull] ISaveable saveable,
-            [NotNull] SaveFileBase file,
-            [CanBeNull] Func<Type, object> instanceFactory = null)
+            [NotNull] SaveFileBase file)
         {
             Assert.IsNotNull(saveable, "Saveable cannot be null.");
             Assert.IsNotNull(file, "File cannot be null.");
 
             // Perform load operation
-            Load(saveable, file, file.GetType(), instanceFactory);
+            Load(saveable, file, file.GetType());
         }
 
 #endregion
@@ -215,15 +203,16 @@ namespace Systems.SimpleCore.Saving.Utility
         /// </summary>
         private static SaveFileBase ApplyConversionChain(
             [NotNull] SaveFileBase startingFile,
-            [NotNull] IReadOnlyList<SaveFileTransitionStep> steps,
-            Func<Type, object> instanceFactory)
+            [NotNull] IReadOnlyList<SaveFileTransitionStep> steps)
         {
-            if (startingFile == null) throw new ArgumentNullException(nameof(startingFile));
-            if (steps == null) throw new ArgumentNullException(nameof(steps));
+            Assert.IsNotNull(startingFile, "Starting file cannot be null.");
+            Assert.IsNotNull(steps, "Steps cannot be null.");
+           
             SaveFileBase current = startingFile;
 
-            foreach (SaveFileTransitionStep step in steps)
+            for (int transitionStepIndex = 0; transitionStepIndex < steps.Count; transitionStepIndex++)
             {
+                SaveFileTransitionStep step = steps[transitionStepIndex];
                 if (!step.From.IsInstanceOfType(current))
                     throw new InvalidOperationException(
                         $"Expected a file of type {step.From.FullName} but got {current.GetType().FullName} at step {step}.");
@@ -231,9 +220,9 @@ namespace Systems.SimpleCore.Saving.Utility
                 switch (step.Kind)
                 {
                     case SaveFileTransitionKind.Upgrade:
-                        current = InvokeUpgrade(step, current, instanceFactory); break;
+                        current = InvokeUpgrade(step, current); break;
                     case SaveFileTransitionKind.Downgrade:
-                        current = InvokeDowngrade(step, current, instanceFactory); break;
+                        current = InvokeDowngrade(step, current); break;
                     default: throw new InvalidOperationException($"Unhandled transition kind {step.Kind}.");
                 }
             }
@@ -243,54 +232,42 @@ namespace Systems.SimpleCore.Saving.Utility
 
         private static SaveFileBase InvokeUpgrade(
             SaveFileTransitionStep step,
-            SaveFileBase current,
-            Func<Type, object> instanceFactory)
+            SaveFileBase current)
         {
             Type foundInterface = typeof(IUpgradeableSaveFile<,>).MakeGenericType(step.To, step.From);
-            Type impl = FindFirstImplementationOfInterface(foundInterface);
-            if (impl == null)
-                throw new InvalidOperationException(
-                    $"No implementation of {foundInterface.FullName} found to perform upgrade {step}.");
-
-            object converter = CreateInstance(impl, instanceFactory);
+        
             // Call GetUpgradedVersion(TFrom)
             MethodInfo method =
                 foundInterface.GetMethod(
                     nameof(IUpgradeableSaveFile<SaveFileBase, SaveFileBase>.GetUpgradedVersion));
             if (method == null) return null;
 
-            object result = InvokeInterfaceMethod(converter, foundInterface, method, current);
+            object result = InvokeInterfaceMethod(current, foundInterface, method, current);
             return (SaveFileBase) result;
         }
 
         private static SaveFileBase InvokeDowngrade(
             SaveFileTransitionStep step,
-            SaveFileBase current,
-            Func<Type, object> instanceFactory)
+            SaveFileBase current)
         {
             Type foundInterface = typeof(IDowngradableSaveFile<,>).MakeGenericType(step.To, step.From);
-            Type impl = FindFirstImplementationOfInterface(foundInterface);
-            if (impl == null)
-                throw new InvalidOperationException(
-                    $"No implementation of {foundInterface.FullName} found to perform downgrade {step}.");
-
-            object converter = CreateInstance(impl, instanceFactory);
+        
             MethodInfo method =
                 foundInterface.GetMethod(nameof(IDowngradableSaveFile<SaveFileBase, SaveFileBase>
                     .GetDowngradedVersion));
             if (method == null) return null;
 
-            object result = InvokeInterfaceMethod(converter, foundInterface, method, current);
+            object result = InvokeInterfaceMethod(current, foundInterface, method, current);
             return (SaveFileBase) result;
         }
 
         private static object InvokeInterfaceSave([NotNull] ISaveable saveable, Type fileType)
         {
             Type foundInterface = typeof(ISaveable<>).MakeGenericType(fileType);
-            MethodInfo method = foundInterface.GetMethod("Save",
+            MethodInfo method = foundInterface.GetMethod("SaveAs",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null)
-                throw new InvalidOperationException($"ISaveable<{fileType.Name}> does not expose Save() method.");
+                throw new InvalidOperationException($"ISaveable<{fileType.Name}> does not expose SaveAs() method.");
 
             return InvokeInterfaceMethod(saveable, foundInterface, method, Array.Empty<object>());
         }
@@ -298,11 +275,11 @@ namespace Systems.SimpleCore.Saving.Utility
         private static void InvokeInterfaceLoad([NotNull] ISaveable saveable, Type fileType, SaveFileBase file)
         {
             Type foundInterface = typeof(ISaveable<>).MakeGenericType(fileType);
-            MethodInfo method = foundInterface.GetMethod("Load",
+            MethodInfo method = foundInterface.GetMethod("LoadAs",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null)
                 throw new InvalidOperationException(
-                    $"ISaveable<{fileType.Name}> does not expose Load(...) method.");
+                    $"ISaveable<{fileType.Name}> does not expose LoadAs(...) method.");
 
             InvokeInterfaceMethod(saveable, foundInterface, method, new object[] {file});
         }
@@ -313,10 +290,10 @@ namespace Systems.SimpleCore.Saving.Utility
             [NotNull] MethodInfo interfaceMethod,
             params object[] args)
         {
-            if (target == null) throw new ArgumentNullException(nameof(target));
-            if (interfaceType == null) throw new ArgumentNullException(nameof(interfaceType));
-            if (interfaceMethod == null) throw new ArgumentNullException(nameof(interfaceMethod));
-
+            Assert.IsNotNull(target, "Target cannot be null.");
+            Assert.IsNotNull(interfaceType, "Interface type cannot be null.");
+            Assert.IsNotNull(interfaceMethod, "Interface method cannot be null.");
+            
             // Try to get interface mapping to find the actual target method
             // (handles explicit implementations & non-public)
             InterfaceMapping map = target.GetType().GetInterfaceMap(interfaceType);
@@ -350,60 +327,7 @@ namespace Systems.SimpleCore.Saving.Utility
 
             return true;
         }
-
-        [CanBeNull] private static Type FindFirstImplementationOfInterface(Type constructedInterface)
-        {
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            foreach (Assembly asm in assemblies)
-            {
-                Type[] types;
-                try
-                {
-                    types = asm.GetTypes();
-                }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    types = ex.Types.Where(t => t != null).ToArray();
-                }
-                catch
-                {
-                    continue;
-                }
-
-                foreach (Type type in types)
-                {
-                    if (type == null || type.IsAbstract || type.IsInterface) continue;
-                    Type[] interfaces = type.GetInterfaces();
-                    if (interfaces.Any(i => i == constructedInterface)) return type;
-                }
-            }
-
-            return null;
-        }
-
-        [NotNull] private static object CreateInstance(
-            [NotNull] Type implType,
-            [CanBeNull] Func<Type, object> instanceFactory)
-        {
-            Assert.IsNotNull(implType, "Interface implementation was not found.");
-
-            // ReSharper disable once InvertIf
-            // Custom instance factory
-            if (instanceFactory != null)
-            {
-                object inst = instanceFactory(implType);
-                if (inst == null)
-                    throw new InvalidOperationException("Instance factory returned null for converter " +
-                                                        implType.FullName);
-                return inst;
-            }
-
-            // Default: Activator
-            return Activator.CreateInstance(implType) ??
-                   throw new InvalidOperationException("Unable to create instance of converter " +
-                                                       implType.FullName);
-        }
-
+        
 #endregion
 
 #region Transition Path Calculation
@@ -514,18 +438,20 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <summary>
         ///     Gets current or builds new adjacency map.
         /// </summary>
-        [NotNull] private static Dictionary<Type, List<(Type To, SaveFileTransitionKind Kind)>>
+        [NotNull] public static Dictionary<Type, List<(Type To, SaveFileTransitionKind Kind)>>
             GetOrBuildAdjacencyMap()
         {
             // If we have already built the adjacency map, return it
             if (_adjacencyMap is {Count: > 0}) return _adjacencyMap;
+            _adjacencyMap.Clear();
 
             // We must examine loaded assemblies for types deriving from SaveFileBase
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
             // Scan all assemblies in the app domain
-            foreach (Assembly assembly in assemblies)
+            for (int assemblyIndex = 0; assemblyIndex < assemblies.Length; assemblyIndex++)
             {
+                Assembly assembly = assemblies[assemblyIndex];
                 // Load all types in the assembly
                 Type[] types;
                 try
@@ -549,10 +475,14 @@ namespace Systems.SimpleCore.Saving.Utility
                     if (type == null) continue;
 
                     // We only need to look at types implementing the marker interfaces
-                    // we do not check for SaveFileBase as we might add converter support in the future
+                    // that are SaveFileBase
+                    if(!typeof(SaveFileBase).IsAssignableFrom(type)) continue;
+                    
+                    // Get all interfaces
                     Type[] interfaces = type.GetInterfaces();
-                    foreach (Type interfaceType in interfaces)
+                    for (int interfaceIndex = 0; interfaceIndex < interfaces.Length; interfaceIndex++)
                     {
+                        Type interfaceType = interfaces[interfaceIndex];
                         // We only care about generic interfaces
                         if (!interfaceType.IsGenericType) continue;
 
