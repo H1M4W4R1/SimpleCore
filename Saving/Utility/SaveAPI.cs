@@ -17,13 +17,6 @@ namespace Systems.SimpleCore.Saving.Utility
     /// </summary>
     public static class SaveAPI
     {
-        /// <summary>
-        ///     Adjacency map for all save files, cached locally
-        /// </summary>
-        [NotNull]
-        private static readonly Dictionary<Type, List<(Type To, SaveFileTransitionKind Kind)>> _adjacencyMap =
-            new();
-
 #region Save/Load
 
         /// <summary>
@@ -430,6 +423,13 @@ namespace Systems.SimpleCore.Saving.Utility
 #endregion
 
 #region Transition Path Calculation
+
+        /// <summary>
+        ///     Adjacency map for all save files, cached locally
+        /// </summary>
+        [NotNull]
+        private static readonly Dictionary<Type, List<(Type To, SaveFileTransitionKind Kind)>> _adjacencyMap =
+            new();
 
         /// <summary>
         ///     Computes the transition path from <typeparamref name="TFrom"/> to <typeparamref name="TTo"/>
