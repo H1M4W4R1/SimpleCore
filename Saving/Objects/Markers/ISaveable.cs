@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Saving.Data;
+using Systems.SimpleCore.Saving.Utility;
 
 namespace Systems.SimpleCore.Saving.Objects.Markers
 {
@@ -11,19 +12,17 @@ namespace Systems.SimpleCore.Saving.Objects.Markers
     public interface ISaveable<[UsedImplicitly] TSaveFile> : ISaveable
         where TSaveFile : SaveFileBase
     {
-        // TODO: Automate this using attributes with a separate file type?
-        
         /// <summary>
         ///     Saves the current state of the object
         /// </summary>
         /// <returns>Data of saved object</returns>
-        [NotNull] protected internal TSaveFile Save();
+        [NotNull] public TSaveFile SaveAs();
 
         /// <summary>
         ///     Loads the saved state of the object
         /// </summary>
         /// <param name="saveFile">Data of saved object</param>
-        protected internal void Load([NotNull] TSaveFile saveFile);
+        public void LoadAs([NotNull] TSaveFile saveFile);
     }
 
     /// <summary>
@@ -32,12 +31,16 @@ namespace Systems.SimpleCore.Saving.Objects.Markers
     public interface ISaveable
     {
         /// <summary>
-        ///     Checks if this object can be saved as the given type
+        ///     Saves the current state of the object
         /// </summary>
-        /// <typeparam name="TSaveFile">Type of save file</typeparam>
-        /// <returns>True if this object can be saved as the given type</returns>
-        public bool CanBeSavedExactlyAs<TSaveFile>()
-            where TSaveFile : SaveFileBase => this is ISaveable<TSaveFile>;
+        /// <returns>Save file</returns>
+        [NotNull] public SaveFileBase Save() => SaveAPI.Save(this);
+        
+        /// <summary>
+        ///     Loads the saved state of the object
+        /// </summary>
+        /// <param name="saveFile">File to load from</param>
+        public void Load([NotNull] SaveFileBase saveFile) => SaveAPI.Load(this, saveFile);
         
         /// <summary>
         ///     Gets all supported file types for this saveable object

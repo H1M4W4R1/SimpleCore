@@ -188,7 +188,7 @@ namespace Systems.SimpleCore.Saving.Utility
         }
 
         /// <summary>
-        ///     Load file into saveable object as default file type.
+        ///     Load file into saveable object as current file type.
         /// </summary>
         /// <param name="saveable">Object to load into</param>
         /// <param name="file">File to load</param>
@@ -202,24 +202,8 @@ namespace Systems.SimpleCore.Saving.Utility
             Assert.IsNotNull(saveable, "Saveable cannot be null.");
             Assert.IsNotNull(file, "File cannot be null.");
 
-            // Determine desired target type: default provided by object, otherwise first supported type.
-            Type desiredTarget;
-            if (saveable is IHasDefaultSaveFile {DefaultSaveFileType: not null} provider)
-            {
-                desiredTarget = provider.DefaultSaveFileType;
-            }
-            else
-            {
-                IReadOnlyList<Type> supported = saveable.GetAllSupportedFileTypes();
-                if (supported == null || supported.Count == 0)
-                    throw new InvalidOperationException(
-                        "Saveable does not declare any supported save file types and no default is provided.");
-
-                desiredTarget = supported[0];
-            }
-
             // Perform load operation
-            Load(saveable, file, desiredTarget, instanceFactory);
+            Load(saveable, file, file.GetType(), instanceFactory);
         }
 
 #endregion
