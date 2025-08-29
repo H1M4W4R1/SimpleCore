@@ -40,7 +40,7 @@ namespace Systems.SimpleCore.Editor.Automation
             if (asset is not ScriptableObject scriptableObject) return false;
             
             // Check if asset is auto generated scriptable object
-            return scriptableObject.GetType().GetCustomAttribute<AutoCreatedObjectAttribute>(true) != null;
+            return scriptableObject.GetType().GetCustomAttribute<AutoCreateAttribute>(true) != null;
         }
     }
 }

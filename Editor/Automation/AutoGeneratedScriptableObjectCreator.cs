@@ -51,7 +51,7 @@ namespace Systems.SimpleCore.Editor.Automation
             if (type.IsAbstract || type.IsInterface) return false;
 
             // Check if object has AutoCreatedObject attribute
-            AutoCreatedObjectAttribute attribute = type.GetCustomAttribute<AutoCreatedObjectAttribute>(true);
+            AutoCreateAttribute attribute = type.GetCustomAttribute<AutoCreateAttribute>(true);
             if (attribute == null) return false;
 
             string typeName = type.Name;
