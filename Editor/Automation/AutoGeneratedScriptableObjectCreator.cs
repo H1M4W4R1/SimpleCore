@@ -3,7 +3,6 @@ using System;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
-using Sirenix.Utilities;
 using Systems.SimpleCore.Automation.Attributes;
 using Systems.SimpleCore.Editor.Utility;
 using UnityEditor;
@@ -34,7 +33,7 @@ namespace Systems.SimpleCore.Editor.Automation
                 {
                     Type type = types[index];
                     // Check if type is a ScriptableObject, if not, skip
-                    if (!type.ImplementsOrInherits(typeof(ScriptableObject))) continue;
+                    if (!typeof(ScriptableObject).IsAssignableFrom(type)) continue;
                     if (!BuildObject(type)) continue;
                     anyObjectChanged = true;
                 }
