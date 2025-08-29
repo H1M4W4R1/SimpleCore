@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Identifiers;
-using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Assertions;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using Object = UnityEngine.Object;
 
 namespace Systems.SimpleCore.Storage
 {
@@ -80,17 +81,25 @@ namespace Systems.SimpleCore.Storage
             if (_isLoading) return;
             _isLoading = true;
             _isLoadingComplete = false;
-
+            
             // Load items
-            _loadRequest = Addressables.LoadAssetsAsync<TUnityObject>(
-                new[] {AddressableLabel}, OnItemLoaded,
-                Addressables.MergeMode.Union);
+            try
+            {
+                _loadRequest = Addressables.LoadAssetsAsync<TUnityObject>(
+                    new[] {AddressableLabel}, OnItemLoaded,
+                    Addressables.MergeMode.Union);
 
-            // Check if request is complete
-            if (_loadRequest.IsDone)
-                OnItemsLoadComplete(_loadRequest);
-            else
-                _loadRequest.Completed += OnItemsLoadComplete;
+                // Check if request is complete
+                if (_loadRequest.IsDone)
+                    OnItemsLoadComplete(_loadRequest);
+                else
+                    _loadRequest.Completed += OnItemsLoadComplete;
+            }
+            catch (InvalidOperationException)
+            {
+                _isLoading = false;
+                _isLoadingComplete = true;
+            }
         }
 
         /// <summary>
