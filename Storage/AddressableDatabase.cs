@@ -11,9 +11,9 @@ namespace Systems.SimpleCore.Storage
     /// <summary>
     ///     Database of all items in game
     /// </summary>
-    public abstract class AddressableDatabase<TSelf, TScriptableObject>
-        where TSelf : AddressableDatabase<TSelf, TScriptableObject>, new()
-        where TScriptableObject : ScriptableObject
+    public abstract class AddressableDatabase<TSelf, TUnityObject>
+        where TSelf : AddressableDatabase<TSelf, TUnityObject>, new()
+        where TUnityObject : Object
     {
         /// <summary>
         ///     Quick access to instance
@@ -28,7 +28,7 @@ namespace Systems.SimpleCore.Storage
         /// <summary>
         ///     Internal data storage
         /// </summary>
-        protected static readonly List<TScriptableObject> internalDataStorage = new();
+        protected static readonly List<TUnityObject> internalDataStorage = new();
 
         /// <summary>
         ///     Instance of this database
@@ -50,7 +50,7 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         private bool _isLoadingComplete;
 
-        private AsyncOperationHandle<IList<TScriptableObject>> _loadRequest;
+        private AsyncOperationHandle<IList<TUnityObject>> _loadRequest;
 
         public static int Count => _instance._Count;
 
@@ -82,7 +82,7 @@ namespace Systems.SimpleCore.Storage
             _isLoadingComplete = false;
 
             // Load items
-            _loadRequest = Addressables.LoadAssetsAsync<TScriptableObject>(
+            _loadRequest = Addressables.LoadAssetsAsync<TUnityObject>(
                 new[] {AddressableLabel}, OnItemLoaded,
                 Addressables.MergeMode.Union);
 
@@ -105,7 +105,7 @@ namespace Systems.SimpleCore.Storage
             if (!_isLoadingComplete) OnItemsLoadComplete(_loadRequest);
         }
 
-        private void OnItemsLoadComplete(AsyncOperationHandle<IList<TScriptableObject>> _)
+        private void OnItemsLoadComplete(AsyncOperationHandle<IList<TUnityObject>> _)
         {
             // Sort after loading to ensure binary search works correctly
             internalDataStorage.Sort((a, b) => HashIdentifier.New(a).CompareTo(HashIdentifier.New(b)));
@@ -116,7 +116,7 @@ namespace Systems.SimpleCore.Storage
 
         private void OnItemLoaded<TObject>(TObject obj)
         {
-            if (obj is not TScriptableObject item) return;
+            if (obj is not TUnityObject item) return;
             internalDataStorage.Add(item);
         }
 
@@ -130,7 +130,7 @@ namespace Systems.SimpleCore.Storage
         ///     for abstract items use <see cref="GetAbstract{TItemType}"/>
         /// </remarks>
         [CanBeNull] public static TItemType GetExact<TItemType>()
-            where TItemType : TScriptableObject, new() =>
+            where TItemType : TUnityObject, new() =>
             GetFast<TItemType>();
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace Systems.SimpleCore.Storage
         /// <typeparam name="TItemType">Item type to get </typeparam>
         /// <returns>First item of specified type or null if no item of specified type is found</returns>
         [CanBeNull] public static TItemType GetAbstract<TItemType>()
-            where TItemType : TScriptableObject =>
+            where TItemType : TUnityObject =>
             _instance._GetItem<TItemType>();
 
         /// <summary>
@@ -177,7 +177,7 @@ namespace Systems.SimpleCore.Storage
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Read-only list of items of specified type</returns>
         [NotNull] public static IReadOnlyList<TItemType> GetAll<TItemType>()
-            where TItemType : TScriptableObject =>
+            where TItemType : TUnityObject =>
             _instance._GetAllItems<TItemType>();
 
         /// <summary>
@@ -214,7 +214,7 @@ namespace Systems.SimpleCore.Storage
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Item with given identifier or null if not found</returns>
         [CanBeNull] public static TItemType GetFast<TItemType>()
-            where TItemType : TScriptableObject
+            where TItemType : TUnityObject
         {
             _instance.EnsureLoaded();
             HashIdentifier hashIdentifier = HashIdentifier.New(typeof(TItemType));
@@ -226,7 +226,7 @@ namespace Systems.SimpleCore.Storage
             while (low <= high)
             {
                 int mid = (low + high) >> 1;
-                TScriptableObject midItem = internalDataStorage[mid];
+                TUnityObject midItem = internalDataStorage[mid];
 
                 // Get object hash
                 HashIdentifier midItemHash = HashIdentifier.New(midItem);
@@ -261,7 +261,7 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         /// <param name="hashIdentifier">Identifier of item to get</param>
         /// <returns>Item with given identifier or null if not found</returns>
-        [CanBeNull] public static TScriptableObject GetFast(HashIdentifier hashIdentifier)
+        [CanBeNull] public static TUnityObject GetFast(HashIdentifier hashIdentifier)
         {
             _instance.EnsureLoaded();
 
@@ -271,7 +271,7 @@ namespace Systems.SimpleCore.Storage
             while (low <= high)
             {
                 int mid = (low + high) >> 1;
-                TScriptableObject midItem = internalDataStorage[mid];
+                TUnityObject midItem = internalDataStorage[mid];
 
                 // Get object hash
                 HashIdentifier midItemHash = HashIdentifier.New(midItem);
