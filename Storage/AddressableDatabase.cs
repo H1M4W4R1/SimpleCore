@@ -19,7 +19,7 @@ namespace Systems.SimpleCore.Storage
         ///     Quick access to instance
         /// </summary>
         public static TSelf Instance => _instance;
-        
+
         /// <summary>
         ///     Label of addressable assets
         /// </summary>
@@ -132,9 +132,10 @@ namespace Systems.SimpleCore.Storage
         [CanBeNull] public static TItemType GetExact<TItemType>()
             where TItemType : TScriptableObject, new() =>
             GetFast<TItemType>();
-        
+
         /// <summary>
-        ///     Gets first item of specified type
+        ///     Gets first item of specified type. To get items by interface
+        ///     use <see cref="GetAbstractUnsafe{TItemType}"/>
         /// </summary>
         /// <typeparam name="TItemType">Item type to get </typeparam>
         /// <returns>First item of specified type or null if no item of specified type is found</returns>
@@ -147,8 +148,15 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         /// <typeparam name="TItemType">Item type to get </typeparam>
         /// <returns>First item of specified type or null if no item of specified type is found</returns>
+        [CanBeNull] public static TItemType GetAbstractUnsafe<TItemType>()
+            => _instance._GetItem<TItemType>();
+        
+        /// <summary>
+        ///     Gets first item of specified type.
+        /// </summary>
+        /// <typeparam name="TItemType">Item type to get </typeparam>
+        /// <returns>First item of specified type or null if no item of specified type is found</returns>
         [CanBeNull] public TItemType _GetItem<TItemType>()
-            where TItemType : TScriptableObject
         {
             EnsureLoaded();
 
@@ -159,11 +167,12 @@ namespace Systems.SimpleCore.Storage
             }
 
             Assert.IsNotNull(null, "Item not found in database");
-            return null;
+            return default;
         }
 
         /// <summary>
-        ///     Gets all items of specified type
+        ///     Gets all items of specified type. To get items by interface
+        ///     see <see cref="GetAllUnsafe{TItemType}"/>
         /// </summary>
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Read-only list of items of specified type</returns>
@@ -176,8 +185,15 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Read-only list of items of specified type</returns>
-        [NotNull] public IReadOnlyList<TItemType> _GetAllItems<TItemType>()
-            where TItemType : TScriptableObject
+        [NotNull] public static IReadOnlyList<TItemType> GetAllUnsafe<TItemType>()
+            => _instance._GetAllItems<TItemType>();
+
+        /// <summary>
+        ///     Gets all items of specified type
+        /// </summary>
+        /// <typeparam name="TItemType">Type of item to get</typeparam>
+        /// <returns>Read-only list of items of specified type</returns>
+        [NotNull] private IReadOnlyList<TItemType> _GetAllItems<TItemType>()
         {
             EnsureLoaded();
 
@@ -221,6 +237,7 @@ namespace Systems.SimpleCore.Storage
                     foundMid = mid;
                     break;
                 }
+
                 if (cmp < 0)
                     low = mid + 1;
                 else
@@ -232,8 +249,9 @@ namespace Systems.SimpleCore.Storage
 
             // Search for first item of type TItemType
             for (int n = foundMid; n < internalDataStorage.Count; n++)
-                if (internalDataStorage[n] is TItemType item) return item;
-            
+                if (internalDataStorage[n] is TItemType item)
+                    return item;
+
             // If not found, return null
             return null;
         }
