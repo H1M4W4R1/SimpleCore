@@ -60,6 +60,11 @@ namespace Systems.SimpleCore.Storage
 
         private AsyncOperationHandle<IList<TLoadType>> _loadRequest;
 
+        /// <summary>
+        ///     Gets loading progress
+        /// </summary>
+        public float LoadProgress => _loadRequest.IsValid() ? _loadRequest.PercentComplete : 0;
+        
         public static int Count => _instance._Count;
 
         /// <summary>
