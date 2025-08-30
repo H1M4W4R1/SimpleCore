@@ -23,7 +23,9 @@ namespace Systems.SimpleCore.Editor.Automation
             {
                 string path = paths[pathIndex];
 
+                // Get asset type
                 Type assetType = AssetDatabase.GetMainAssetTypeAtPath(path);
+                if (assetType == null) continue;
                 
                 // Check if asset has proper attribute
                 AutoAddressableObjectAttribute attribute = assetType.GetCustomAttribute<AutoAddressableObjectAttribute>(true);
