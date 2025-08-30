@@ -2,19 +2,26 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Identifiers;
+using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Assertions;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.ResourceManagement.Exceptions;
 using Object = UnityEngine.Object;
 
 namespace Systems.SimpleCore.Storage
 {
-    /// <summary>
-    ///     Database of all items in game
-    /// </summary>
-    public abstract class AddressableDatabase<TSelf, TUnityObject>
-        where TSelf : AddressableDatabase<TSelf, TUnityObject>, new()
+    public abstract class
+        AddressableDatabase<TSelf, TUnityObject> : AddressableDatabase<TSelf, TUnityObject, TUnityObject>
+        where TSelf : AddressableDatabase<TSelf, TUnityObject, TUnityObject>, new()
         where TUnityObject : Object
+    {
+    }
+
+    public abstract class AddressableDatabase<TSelf, TUnityObject, TLoadType>
+        where TSelf : AddressableDatabase<TSelf, TUnityObject, TLoadType>, new()
+        where TUnityObject : Object
+        where TLoadType : Object
     {
         /// <summary>
         ///     Quick access to instance
@@ -51,7 +58,7 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         private bool _isLoadingComplete;
 
-        private AsyncOperationHandle<IList<TUnityObject>> _loadRequest;
+        private AsyncOperationHandle<IList<TLoadType>> _loadRequest;
 
         public static int Count => _instance._Count;
 
@@ -81,11 +88,14 @@ namespace Systems.SimpleCore.Storage
             if (_isLoading) return;
             _isLoading = true;
             _isLoadingComplete = false;
-            
+
             // Load items
             try
             {
-                _loadRequest = Addressables.LoadAssetsAsync<TUnityObject>(
+                Assert.IsFalse(typeof(MonoBehaviour).IsAssignableFrom(typeof(TLoadType)),
+                    "This won't work properly. Use GameObject as base type and cast it in OnItemLoaded");
+
+                _loadRequest = Addressables.LoadAssetsAsync<TLoadType>(
                     new[] {AddressableLabel}, OnItemLoaded,
                     Addressables.MergeMode.Union);
 
@@ -95,7 +105,7 @@ namespace Systems.SimpleCore.Storage
                 else
                     _loadRequest.Completed += OnItemsLoadComplete;
             }
-            catch (InvalidOperationException)
+            catch (OperationException)
             {
                 _isLoading = false;
                 _isLoadingComplete = true;
@@ -114,7 +124,7 @@ namespace Systems.SimpleCore.Storage
             if (!_isLoadingComplete) OnItemsLoadComplete(_loadRequest);
         }
 
-        private void OnItemsLoadComplete(AsyncOperationHandle<IList<TUnityObject>> _)
+        private void OnItemsLoadComplete(AsyncOperationHandle<IList<TLoadType>> _)
         {
             // Sort after loading to ensure binary search works correctly
             internalDataStorage.Sort((a, b) => HashIdentifier.New(a).CompareTo(HashIdentifier.New(b)));
@@ -123,10 +133,19 @@ namespace Systems.SimpleCore.Storage
             _isLoadingComplete = true;
         }
 
-        private void OnItemLoaded<TObject>(TObject obj)
+        protected void OnItemLoaded<TObject>(TObject obj)
         {
-            if (obj is not TUnityObject item) return;
-            internalDataStorage.Add(item);
+            // Handle game object
+            if (obj is GameObject gameObj)
+            {
+                TUnityObject item = gameObj.GetComponent<TUnityObject>();
+                if (ReferenceEquals(item, null)) return;
+                internalDataStorage.Add(item);
+                return;
+            }
+
+            if (obj is not TUnityObject validItem) return;
+            internalDataStorage.Add(validItem);
         }
 
         /// <summary>
@@ -159,7 +178,7 @@ namespace Systems.SimpleCore.Storage
         /// <returns>First item of specified type or null if no item of specified type is found</returns>
         [CanBeNull] public static TItemType GetAbstractUnsafe<TItemType>()
             => _instance._GetItem<TItemType>();
-        
+
         /// <summary>
         ///     Gets first item of specified type.
         /// </summary>
