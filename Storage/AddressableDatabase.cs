@@ -63,7 +63,7 @@ namespace Systems.SimpleCore.Storage
         /// <summary>
         ///     Gets loading progress
         /// </summary>
-        public float LoadProgress => _loadRequest.IsValid() ? _loadRequest.PercentComplete : 0;
+        public static float LoadProgress => _instance._loadRequest.IsValid() ? _instance._loadRequest.PercentComplete : 0;
         
         public static int Count => _instance._Count;
 
