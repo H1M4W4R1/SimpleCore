@@ -21,25 +21,29 @@ namespace Systems.SimpleCore.Editor.Utility
         /// <param name="groupName">The Addressables group name to use (will be created if needed).</param>
         /// <param name="address">Optional custom address for the asset (defaults to asset name if empty).</param>
         /// <param name="label">Optional label to assign to the asset.</param>
-        public static void MarkAssetAddressable(
+        /// <returns>True if any changes were detected, false otherwise.</returns>
+        public static bool MarkAssetAddressable(
             [NotNull] string asset,
             [NotNull] string groupName,
             [CanBeNull] string address = null,
             [CanBeNull] string label = null)
         {
 #if UNITY_EDITOR
-            if (string.IsNullOrEmpty(asset) || string.IsNullOrEmpty(groupName)) return;
+            if (string.IsNullOrEmpty(asset) || string.IsNullOrEmpty(groupName)) return false;
 
             // Get default Addressables settings
             AddressableAssetSettings settings = AddressableAssetSettingsDefaultObject.Settings;
-            if (settings == null) return;
+            if (settings == null) return false;
 
+            bool changesDetected = false;
+            
             // Find or create the group
             AddressableAssetGroup group = settings.FindGroup(groupName);
             if (group == null)
             {
                 // Create a new non-default, modifiable group with default schema
                 group = settings.CreateGroup(groupName, false, false, false, null, null);
+                changesDetected = true;
             }
 
             // Get asset GUID and move/create entry
@@ -47,13 +51,17 @@ namespace Systems.SimpleCore.Editor.Utility
             AddressableAssetEntry entry = settings.CreateOrMoveEntry(assetGuid, group, false, false);
 
             // Skip if entry is not found
-            if (entry == null) return;
+            if (entry == null) return changesDetected;
 
             // Optionally set custom address
             if (!string.IsNullOrEmpty(address))
             {
                 if (entry.address != address)
+                {
                     Debug.Log($"Address of {asset} changed from {entry.address} to {address}");
+                    changesDetected = true;
+                }
+
                 entry.SetAddress(address, false);
             }
 
@@ -62,14 +70,22 @@ namespace Systems.SimpleCore.Editor.Utility
             {
                 settings.AddLabel(label);
                 if (!entry.labels.Contains(label))
+                {
                     Debug.Log($"Label {label} was added to {asset}");
+                    changesDetected = true;
+                }
 
                 entry.SetLabel(label, true, true);
             }
 
             // Mark settings dirty so changes are saved
-            EditorUtility.SetDirty(settings);
-            AssetDatabase.SaveAssets();
+            if (changesDetected)
+            {
+                EditorUtility.SetDirty(settings);
+                AssetDatabase.SaveAssets();
+            }
+
+            return changesDetected;
 #endif
         }
     }

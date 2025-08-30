@@ -25,17 +25,26 @@ namespace Systems.SimpleCore.Editor.Automation
 
                 // Get asset type
                 Type assetType = AssetDatabase.GetMainAssetTypeAtPath(path);
-                if (assetType == null) continue;
+                if (assetType != typeof(GameObject)) continue;
                 
-                // Check if asset has proper attribute
-                AutoAddressableObjectAttribute attribute = assetType.GetCustomAttribute<AutoAddressableObjectAttribute>(true);
-                if (attribute == null) continue;
-                
-                // Get asset from path
-                Object asset = AssetDatabase.LoadAssetAtPath(path, assetType);
-                
-                // Register asset in Addressables system
-                AddressableExtensions.MarkAssetAddressable(path, attribute.Path, label: attribute.Label);
+                // Get all components from GameObject
+                GameObject gameObject = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                Component[] components = gameObject.GetComponents<Component>();
+
+                // Handle all components
+                for (int componentIndex = 0; componentIndex < components.Length; componentIndex++)
+                {
+                    // Get component type
+                    Type componentType = components[componentIndex].GetType();
+                    
+                    // Check if asset has proper attribute
+                    AutoAddressableObjectAttribute attribute =
+                        componentType.GetCustomAttribute<AutoAddressableObjectAttribute>(true);
+                    if (attribute == null) continue;
+
+                    // Register asset in Addressables system
+                    AddressableExtensions.MarkAssetAddressable(path, attribute.Path, label: attribute.Label);
+                }
             }
 
             // Return unmodified paths
