@@ -34,7 +34,7 @@ namespace Systems.SimpleCore.Editor.Automation
         {
             // Get asset at desired path
             Object asset = AssetDatabase.LoadAssetAtPath<Object>(assetPath);
-            Assert.IsNotNull(asset, "Asset is null, something went wrong");
+            if (!asset) return false;
 
             // Check if asset is auto generated (get by attribute)
             if (asset is not ScriptableObject scriptableObject) return false;

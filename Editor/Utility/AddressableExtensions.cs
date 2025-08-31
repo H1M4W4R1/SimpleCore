@@ -2,6 +2,7 @@
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
+using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
 
 namespace Systems.SimpleCore.Editor.Utility
@@ -43,6 +44,8 @@ namespace Systems.SimpleCore.Editor.Utility
             {
                 // Create a new non-default, modifiable group with default schema
                 group = settings.CreateGroup(groupName, false, false, false, null, null);
+                group.AddSchema<BundledAssetGroupSchema>();
+                group.AddSchema<ContentUpdateGroupSchema>();
                 changesDetected = true;
             }
 
