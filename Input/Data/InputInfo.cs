@@ -1,7 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 
-namespace Systems.SimpleCore.Utility.Input
+namespace Systems.SimpleCore.Input.Data
 {
     public readonly struct InputInfo
     {
@@ -18,6 +18,10 @@ namespace Systems.SimpleCore.Utility.Input
             this.displayName = displayName;
             this.shortName = shortName;
             deviceTypeName = deviceType.Name.Replace("State", "");
+            
+            // Ensure path is properly formatted
+            if(!this.pathPart.StartsWith('/'))
+                this.pathPart = '/' + this.pathPart;
         }
 
         [CanBeNull] public string DisplayName

@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using JetBrains.Annotations;
+using Systems.SimpleCore.Input.Data;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Layouts;
 using UnityEngine.InputSystem.LowLevel;
 
-namespace Systems.SimpleCore.Utility.Input
+namespace Systems.SimpleCore.Input
 {
     /// <summary>
     ///     Brute force to display names in English... usually...
@@ -50,7 +50,7 @@ namespace Systems.SimpleCore.Utility.Input
 
                 // Skip if device type is invalid
                 if (!path.Contains(info.deviceTypeName)) continue;
-
+                
                 // Analyze alias
                 if (path.EndsWith(info.pathPart, StringComparison.InvariantCulture)) return info;
             }
