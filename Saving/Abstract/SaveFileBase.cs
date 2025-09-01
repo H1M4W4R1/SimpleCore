@@ -1,5 +1,5 @@
 ﻿
-namespace Systems.SimpleCore.Saving.Data
+namespace Systems.SimpleCore.Saving.Abstract
 {
     public abstract class SaveFileBase
     {

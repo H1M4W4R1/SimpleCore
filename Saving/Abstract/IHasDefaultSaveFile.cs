@@ -1,7 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 
-namespace Systems.SimpleCore.Saving.Data.Markers
+namespace Systems.SimpleCore.Saving.Abstract
 {
     /// <summary>
     ///     Optional interface an <see cref="ISaveable"/> implementation may expose to indicate

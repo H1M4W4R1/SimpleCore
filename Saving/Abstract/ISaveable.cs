@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Saving.Utility;
 
-namespace Systems.SimpleCore.Saving.Data.Markers
+namespace Systems.SimpleCore.Saving.Abstract
 {
     /// <summary>
     ///     Represents that object can be saved and handles saving methodology

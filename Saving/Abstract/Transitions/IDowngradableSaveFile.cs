@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 
-namespace Systems.SimpleCore.Saving.Data.Markers
+namespace Systems.SimpleCore.Saving.Abstract.Transitions
 {
     /// <summary>
     ///     Indicates a save file type can be downgraded (converted) from a newer version.

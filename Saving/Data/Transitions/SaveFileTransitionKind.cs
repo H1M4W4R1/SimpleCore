@@ -1,4 +1,4 @@
-﻿namespace Systems.SimpleCore.Saving.Data.Enums
+﻿namespace Systems.SimpleCore.Saving.Data.Transitions
 {
     /// <summary>
     ///     Kind of transition between save file types.

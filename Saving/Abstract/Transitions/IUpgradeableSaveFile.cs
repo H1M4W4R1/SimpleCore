@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 
-namespace Systems.SimpleCore.Saving.Data.Markers
+namespace Systems.SimpleCore.Saving.Abstract.Transitions
 {
     /// <summary>
     ///     Added to <see cref="SaveFileBase"/> to indicate it can be upgraded to a new version
