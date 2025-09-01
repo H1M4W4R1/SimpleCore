@@ -5,6 +5,8 @@ using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Input.Data;
 using Systems.SimpleCore.Input.Enums;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
@@ -194,16 +196,8 @@ namespace Systems.SimpleCore.Input
             [NotNull] this InputActionReference actionReference,
             bool preferShortNames = true,
             bool ignoreOverrides = false,
-            InputDeviceType allowedDevices = InputDeviceType.All)
-        {
-            if (GetBindingFromAction(actionReference.action, allowedDevices, ignoreOverrides,
-                    out int bindingIndex))
-                return GetBindingDisplayName(actionReference.action, bindingIndex, preferShortNames,
-                    ignoreOverrides,
-                    allowedDevices);
-
-            return string.Empty;
-        }
+            InputDeviceType allowedDevices = InputDeviceType.All) =>
+            GetBindingDisplayName(actionReference.action, preferShortNames, ignoreOverrides, allowedDevices);
 
         /// <summary>
         ///     Gets display name of the binding.
@@ -246,11 +240,26 @@ namespace Systems.SimpleCore.Input
             bool ignoreOverrides = false,
             InputDeviceType allowedDevices = InputDeviceType.All)
         {
-            if (GetBindingFromAction(action, allowedDevices, ignoreOverrides, out int bindingIndex))
-                return GetBindingDisplayName(action, bindingIndex, preferShortNames, ignoreOverrides,
-                    allowedDevices);
+            // Get all bindings from action
+            bool anyBindingsFound = GetBindingsFromAction(action, allowedDevices, ignoreOverrides,
+                out UnsafeList<int> bindings);
+            if (!anyBindingsFound) return string.Empty;
 
-            return string.Empty;
+            StringBuilder resultBuilder = new StringBuilder();
+            
+            // Get binding names
+            for (int i = 0; i < bindings.Length; i++)
+            {
+                string bindingDisplayName = GetBindingDisplayName(action, bindings[i], preferShortNames,
+                    ignoreOverrides, allowedDevices);
+
+                if (resultBuilder.Length == 0)
+                    resultBuilder.Append(bindingDisplayName);
+                else
+                    resultBuilder.Append(" | ").Append(bindingDisplayName);
+            }
+
+            return resultBuilder.ToString();
         }
 
         /// <summary>
@@ -941,6 +950,45 @@ namespace Systems.SimpleCore.Input
             }
 
             return false;
+        }
+
+
+        /// <summary>
+        ///     Uses provided <see cref="InputActionReference"/> to find FIRST! binding index for provided device. 
+        /// </summary>
+        public static bool GetBindingsFromAction(
+            [NotNull] InputActionReference reference,
+            InputDeviceType allowedDevices,
+            bool ignoreOverrides,
+            out UnsafeList<int> bindingIndexes)
+        {
+            return GetBindingsFromAction(reference.action, allowedDevices, ignoreOverrides, out bindingIndexes);
+        }
+
+        /// <summary>
+        ///     Uses provided <see cref="InputAction"/> to find all binding index for provided device.
+        /// </summary>
+        public static bool GetBindingsFromAction(
+            [NotNull] InputAction action,
+            InputDeviceType allowedDevices,
+            bool ignoreOverrides,
+            out UnsafeList<int> bindingIndexes)
+        {
+            bindingIndexes = new UnsafeList<int>(16, Allocator.TempJob);
+
+            // Loop through action binding
+            for (int i = 0; i < action.bindings.Count; i++)
+            {
+                if (!IsValidDevice(action, i, allowedDevices, ignoreOverrides)) continue;
+                 
+                // Get binding and check if composite, skip if so
+                InputBinding binding = action.bindings[i];
+                if(binding.isPartOfComposite) continue;
+                
+                bindingIndexes.Add(i);
+            }
+
+            return bindingIndexes.Length > 0;
         }
 
         /// <summary>
