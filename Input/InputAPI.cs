@@ -10,7 +10,6 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Composites;
 
 namespace Systems.SimpleCore.Input
 {
@@ -243,7 +242,11 @@ namespace Systems.SimpleCore.Input
             // Get all bindings from action
             bool anyBindingsFound = GetBindingsFromAction(action, allowedDevices, ignoreOverrides,
                 out UnsafeList<int> bindings);
-            if (!anyBindingsFound) return string.Empty;
+            if (!anyBindingsFound)
+            {
+                bindings.Dispose();
+                return string.Empty;
+            }
 
             StringBuilder resultBuilder = new StringBuilder();
             
@@ -259,6 +262,7 @@ namespace Systems.SimpleCore.Input
                     resultBuilder.Append(" | ").Append(bindingDisplayName);
             }
 
+            bindings.Dispose();
             return resultBuilder.ToString();
         }
 
@@ -297,7 +301,7 @@ namespace Systems.SimpleCore.Input
 
                 // Don't question my sanity, Unity Input System is so crappy package that anything they did
                 // was probably better than this useless piece of feature-lacking shit
-                splitString = type is InputActionType.Value ? " / " : " + ";
+                splitString = type is InputActionType.Value ? splitString : " + ";
 
                 int traversingIndex = bindingIndex + 1;
 
