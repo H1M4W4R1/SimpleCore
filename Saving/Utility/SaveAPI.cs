@@ -7,7 +7,6 @@ using Systems.SimpleCore.Saving.Data;
 using Systems.SimpleCore.Saving.Data.Enums;
 using Systems.SimpleCore.Saving.Data.Markers;
 using Systems.SimpleCore.Saving.Data.Transitions;
-using Systems.SimpleCore.Saving.Objects.Markers;
 using UnityEngine.Assertions;
 
 namespace Systems.SimpleCore.Saving.Utility

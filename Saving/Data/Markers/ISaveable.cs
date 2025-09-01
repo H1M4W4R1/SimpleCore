@@ -1,14 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using Systems.SimpleCore.Saving.Data;
 using Systems.SimpleCore.Saving.Utility;
 
-namespace Systems.SimpleCore.Saving.Objects.Markers
+namespace Systems.SimpleCore.Saving.Data.Markers
 {
     /// <summary>
     ///     Represents that object can be saved and handles saving methodology
     /// </summary>
+    /// <remarks>
+    ///     Those markers should be used on structures that already contain all data to be saved.
+    ///     For example: by saving inventory and equipment you can create custom structure
+    ///     InventoryAndEquipmentData which afterward can be saved as JSON or XML using
+    ///     custom save file types.
+    /// </remarks>
     public interface ISaveable<[UsedImplicitly] TSaveFile> : ISaveable
         where TSaveFile : SaveFileBase
     {
