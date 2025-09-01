@@ -25,7 +25,7 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <returns>Save file</returns>
         /// <exception cref="InvalidOperationException">Thrown if no default save file type is provided and no supported file types are declared.</exception>
         [NotNull] public static SaveFileBase Save(
-            [NotNull] ISaveable saveable)
+            [NotNull] ISaveData saveable)
         {
             Assert.IsNotNull(saveable, "Saveable cannot be null.");
 
@@ -53,7 +53,7 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <returns>Save file</returns>
         /// <exception cref="InvalidOperationException">Thrown if the saveable cannot be saved as the given type.</exception>
         [NotNull] public static SaveFileBase SaveAs<TSaveFile>(
-            [NotNull] ISaveable saveable)
+            [NotNull] ISaveData saveable)
             where TSaveFile : SaveFileBase => SaveAs(saveable, typeof(TSaveFile));
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <returns>Save file</returns>
         /// <exception cref="InvalidOperationException">Thrown if the saveable cannot be saved as the given type.</exception>
         [NotNull] public static SaveFileBase SaveAs(
-            [NotNull] ISaveable saveable,
+            [NotNull] ISaveData saveable,
             [NotNull] Type targetSaveFileType)
         {
             Assert.IsNotNull(saveable, "Saveable cannot be null.");
@@ -115,7 +115,7 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <param name="fileType">Type of file</param>
         /// <exception cref="InvalidOperationException">Thrown if the file cannot be loaded into the object.</exception>
         public static void Load(
-            [NotNull] ISaveable saveable,
+            [NotNull] ISaveData saveable,
             [NotNull] SaveFileBase file,
             [NotNull] Type fileType)
         {
@@ -169,7 +169,7 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <typeparam name="TFile">Type of file</typeparam>
         /// <exception cref="InvalidOperationException">Thrown if the file cannot be loaded into the object.</exception>
         public static void Load<TFile>(
-            [NotNull] ISaveable saveable,
+            [NotNull] ISaveData saveable,
             [NotNull] SaveFileBase file)
             where TFile : SaveFileBase
         {
@@ -183,7 +183,7 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <param name="file">File to load</param>
         /// <exception cref="InvalidOperationException">Thrown if the file cannot be loaded into the object.</exception>
         public static void Load(
-            [NotNull] ISaveable saveable,
+            [NotNull] ISaveData saveable,
             [NotNull] SaveFileBase file)
         {
             Assert.IsNotNull(saveable, "Saveable cannot be null.");
@@ -260,9 +260,9 @@ namespace Systems.SimpleCore.Saving.Utility
             return (SaveFileBase) result;
         }
 
-        private static object InvokeInterfaceSave([NotNull] ISaveable saveable, Type fileType)
+        private static object InvokeInterfaceSave([NotNull] ISaveData saveable, Type fileType)
         {
-            Type foundInterface = typeof(ISaveable<>).MakeGenericType(fileType);
+            Type foundInterface = typeof(ISaveData<>).MakeGenericType(fileType);
             MethodInfo method = foundInterface.GetMethod("SaveAs",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null)
@@ -271,9 +271,9 @@ namespace Systems.SimpleCore.Saving.Utility
             return InvokeInterfaceMethod(saveable, foundInterface, method, Array.Empty<object>());
         }
 
-        private static void InvokeInterfaceLoad([NotNull] ISaveable saveable, Type fileType, SaveFileBase file)
+        private static void InvokeInterfaceLoad([NotNull] ISaveData saveable, Type fileType, SaveFileBase file)
         {
-            Type foundInterface = typeof(ISaveable<>).MakeGenericType(fileType);
+            Type foundInterface = typeof(ISaveData<>).MakeGenericType(fileType);
             MethodInfo method = foundInterface.GetMethod("LoadAs",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null)

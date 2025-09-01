@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 namespace Systems.SimpleCore.Saving.Abstract
 {
     /// <summary>
-    ///     Optional interface an <see cref="ISaveable"/> implementation may expose to indicate
+    ///     Optional interface an <see cref="ISaveData"/> implementation may expose to indicate
     ///     its default save-file type.
     /// </summary>
     public interface IHasDefaultSaveFile

@@ -6,7 +6,7 @@ using Systems.SimpleCore.Saving.Utility;
 namespace Systems.SimpleCore.Saving.Abstract
 {
     /// <summary>
-    ///     Represents that object can be saved and handles saving methodology
+    ///     Represents save data that can be used to create a file.
     /// </summary>
     /// <remarks>
     ///     Those markers should be used on structures that already contain all data to be saved.
@@ -14,26 +14,61 @@ namespace Systems.SimpleCore.Saving.Abstract
     ///     InventoryAndEquipmentData which afterward can be saved as JSON or XML using
     ///     custom save file types.
     /// </remarks>
-    public interface ISaveable<[UsedImplicitly] TSaveFile> : ISaveable
+    public interface ISaveData<[UsedImplicitly] TSaveFile> : ISaveData
         where TSaveFile : SaveFileBase
     {
+        /// <summary>
+        ///     Collects all data for this object, should set all fields before
+        ///     <see cref="BuildSaveFile"/> can convert them into save file.
+        /// </summary>
+        public void CollectData();
+
+        /// <summary>
+        ///     Distributes data loaded from save file into objects it was
+        ///     collected from. By default, does nothing.
+        /// </summary>
+        public void DistributeData()
+        {
+            
+        }
+
+        /// <summary>
+        ///     Builds save file from previously collected data
+        /// </summary>
+        /// <returns>Save file</returns>
+        [NotNull] public TSaveFile BuildSaveFile();
+
         /// <summary>
         ///     Saves the current state of the object
         /// </summary>
         /// <returns>Data of saved object</returns>
-        [NotNull] public TSaveFile SaveAs();
+        [NotNull] public TSaveFile SaveAs()
+        {
+            CollectData();
+            return BuildSaveFile();
+        }
 
+        /// <summary>
+        ///     Parses save file into this object
+        /// </summary>
+        /// <param name="saveFile">File to parse</param>
+        public void ParseSaveFile([NotNull] TSaveFile saveFile);
+        
         /// <summary>
         ///     Loads the saved state of the object
         /// </summary>
         /// <param name="saveFile">Data of saved object</param>
-        public void LoadAs([NotNull] TSaveFile saveFile);
+        public void LoadAs([NotNull] TSaveFile saveFile)
+        {
+            ParseSaveFile(saveFile);
+            DistributeData();
+        }
     }
 
     /// <summary>
     ///     Represents that object can be saved and handles saving methodology
     /// </summary>
-    public interface ISaveable
+    public interface ISaveData
     {
         /// <summary>
         ///     Saves the current state of the object
@@ -69,7 +104,7 @@ namespace Systems.SimpleCore.Saving.Abstract
 
                 // Validate if generic type is ISaveable<T>
                 Type genericType = interfaceType.GetGenericTypeDefinition();
-                if (genericType == typeof(ISaveable<>))
+                if (genericType == typeof(ISaveData<>))
                     results.Add(interfaceType.GetGenericArguments()[0]);
             }
             
