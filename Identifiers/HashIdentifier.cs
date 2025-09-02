@@ -1,16 +1,20 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
+using Systems.SimpleCore.Identifiers.Abstract;
 
 namespace Systems.SimpleCore.Identifiers
 {
     /// <summary>
     ///     Hash-based identifier
     /// </summary>
-    public readonly struct HashIdentifier : IEquatable<HashIdentifier>, IComparable<HashIdentifier>
+    public readonly struct HashIdentifier : INumberIdentifier<ulong>,
+        IEquatable<HashIdentifier>, IComparable<HashIdentifier>
     {
         public readonly ulong value;
-
+        
+        public bool IsCreated => value != 0;
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public HashIdentifier(ulong value)
         {
             this.value = value;
@@ -59,5 +63,8 @@ namespace Systems.SimpleCore.Identifiers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] [NotNull] public override string ToString()
             => value.ToString("X");
+        
+        /// <inheritdoc/>
+        public ulong Value => value;
     }
 }
