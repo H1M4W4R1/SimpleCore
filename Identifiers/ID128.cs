@@ -13,7 +13,7 @@ namespace Systems.SimpleCore.Identifiers
     ///     Represents 128-bit non-unique identifier.
     /// </summary>
     [BurstCompile] [StructLayout(LayoutKind.Explicit)] [Serializable]
-    public struct ID128 : INumberIdentifier<uint4>, IEquatable<ID128>
+    public struct ID128 : INumberIdentifier<uint4>, IEquatable<ID128>, IComparable<ID128>
     {
         [FieldOffset(0)] [SerializeField] [HideInInspector] private uint4 value; // 16B -> 16B
         [FieldOffset(16)] [SerializeField] [HideInInspector] private byte isCreated; // 1B -> 17B
@@ -54,5 +54,21 @@ namespace Systems.SimpleCore.Identifiers
 
         /// <inheritdoc />
         public uint4 Value => value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(ID128 other)
+        {
+            // Compare values
+            int valueComparison = value.x.CompareTo(other.value.x);
+            if (valueComparison != 0) return valueComparison;
+            valueComparison = value.y.CompareTo(other.value.y);
+            if (valueComparison != 0) return valueComparison;
+            valueComparison = value.z.CompareTo(other.value.z);
+            if (valueComparison != 0) return valueComparison;
+            valueComparison = value.w.CompareTo(other.value.w);
+            if (valueComparison != 0) return valueComparison;
+            
+            return isCreated.CompareTo(other.isCreated);
+        }
     }
 }

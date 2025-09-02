@@ -12,7 +12,7 @@ namespace Systems.SimpleCore.Identifiers
     ///     Represents 16-bit non-unique identifier.
     /// </summary>
     [BurstCompile] [StructLayout(LayoutKind.Explicit)] [Serializable]
-    public struct ID16 : INumberIdentifier<ushort>, IEquatable<ID16>
+    public struct ID16 : INumberIdentifier<ushort>, IEquatable<ID16>, IComparable<ID16>
     {
         [FieldOffset(0)] [SerializeField] [HideInInspector] private ushort value;
         [FieldOffset(2)] [SerializeField] [HideInInspector] private byte isCreated;
@@ -57,5 +57,13 @@ namespace Systems.SimpleCore.Identifiers
 
         /// <inheritdoc />
         public ushort Value => value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(ID16 other)
+        {
+            int valueComparison = value.CompareTo(other.value);
+            if (valueComparison != 0) return valueComparison;
+            return isCreated.CompareTo(other.isCreated);
+        }
     }
 }

@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Identifiers.Abstract;
+using Unity.Burst;
+using Unity.Burst.CompilerServices;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -21,7 +23,7 @@ namespace Systems.SimpleCore.Identifiers
     ///     </ul>
     /// </summary>
     [StructLayout(LayoutKind.Explicit)] [Serializable]
-    public struct Snowflake128 : IUniqueIdentifier, IEquatable<Snowflake128>
+    public struct Snowflake128 : IUniqueIdentifier, IEquatable<Snowflake128>, IComparable<Snowflake128>
     {
         /// <summary>
         ///     Local counter for id creation
@@ -30,27 +32,21 @@ namespace Systems.SimpleCore.Identifiers
 
         [FieldOffset(0)] [SerializeField] [HideInInspector] private int4 vectorized;
         [FieldOffset(0)] [SerializeField] [HideInInspector] private long timestamp;
-        [FieldOffset(8)] [SerializeField] [HideInInspector] private uint identifierData;
-        [FieldOffset(12)] [SerializeField] [HideInInspector] private ushort additionalData;
-        [FieldOffset(14)] [SerializeField] [HideInInspector] private byte reserved;
-        [FieldOffset(15)] [SerializeField] [HideInInspector] private byte created;
+        [FieldOffset(8)] [SerializeField] [HideInInspector] private ulong cyclicIndex;
 
         /// <inheritdoc />
-        public bool IsCreated => created == 1;
+        public bool IsCreated => timestamp != 0;
 
         /// <summary>
         ///     Creates new Snowflake128 identifier with given timestamp, identifier data and additional data.
         /// </summary>
-        public Snowflake128(long timestamp, uint identifierData, ushort additionalData)
+        public Snowflake128(long timestamp, ulong cyclicIndex)
         {
             // This value is overriden by remaining data and thus should be ignored 
             vectorized = default;
 
             this.timestamp = timestamp;
-            this.identifierData = identifierData;
-            this.additionalData = additionalData;
-            reserved = 0;
-            created = 1;
+            this.cyclicIndex = cyclicIndex;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public bool Equals(Snowflake128 other)
@@ -82,11 +78,11 @@ namespace Systems.SimpleCore.Identifiers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] [NotNull] public override string ToString()
         {
-            return $"{timestamp:X16}-{identifierData:X8}-{additionalData:X4}-{reserved:X2}-{created:X2}";
+            return $"{timestamp:X16}-{cyclicIndex:X16}";
         }
 
         public static Snowflake128 Empty => default;
-        public static Snowflake128 New => new(DateTime.UtcNow.Ticks, idGeneratorCounter++, 0);
+        public static Snowflake128 New() => new(DateTime.UtcNow.Ticks, idGeneratorCounter++);
 
         public string GetDebugTooltipText()
         {
@@ -95,12 +91,18 @@ namespace Systems.SimpleCore.Identifiers
             tooltipBuilder.AppendLine($"<color=#00FFFF>Ticks:</color> {timestamp:X16}");
             tooltipBuilder.AppendLine(
                 $"<color=#00FFFF>Creation date [UTC]:</color> {new DateTime(timestamp):yyyy-MM-dd HH:mm:ss}");
-            tooltipBuilder.AppendLine($"<color=#00FFFF>Cyclic index:</color> {identifierData:X8}");
-            tooltipBuilder.AppendLine($"<color=#00FFFF>Additional data:</color> {additionalData:X4}");
+            tooltipBuilder.AppendLine($"<color=#00FFFF>Cyclic index:</color> {cyclicIndex:X8}");
             tooltipBuilder.AppendLine(""); // spacer
             tooltipBuilder.Append(
-                $"<color=#00FFFF>Is created:</color> {(created > 0 ? "<color=green>Yes</color>" : "<color=red>No</color>")}");
+                $"<color=#00FFFF>Is created:</color> {(IsCreated ? "<color=green>Yes</color>" : "<color=red>No</color>")}");
             return tooltipBuilder.ToString();
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public int CompareTo(Snowflake128 other)
+        {
+            int ticksCompareResult = timestamp.CompareTo(other.timestamp);
+            if (Hint.Unlikely(ticksCompareResult == 0)) return cyclicIndex.CompareTo(other.cyclicIndex);
+            return ticksCompareResult;
         }
     }
 }

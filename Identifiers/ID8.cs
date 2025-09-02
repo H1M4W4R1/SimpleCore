@@ -12,7 +12,7 @@ namespace Systems.SimpleCore.Identifiers
     ///     Simple 8-bit non-unique identifier.
     /// </summary>
     [BurstCompile] [StructLayout(LayoutKind.Explicit)] [Serializable]
-    public struct ID8 : INumberIdentifier<byte>, IEquatable<ID8>
+    public struct ID8 : INumberIdentifier<byte>, IEquatable<ID8>, IComparable<ID8>
     {
         [FieldOffset(0)] [SerializeField] [HideInInspector] private byte value;
         [FieldOffset(1)] [SerializeField] [HideInInspector] private byte isCreated;
@@ -55,5 +55,13 @@ namespace Systems.SimpleCore.Identifiers
 
         /// <inheritdoc />
         public byte Value => value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(ID8 other)
+        {
+            int valueComparison = value.CompareTo(other.value);
+            if (valueComparison != 0) return valueComparison;
+            return isCreated.CompareTo(other.isCreated);
+        }
     }
 }

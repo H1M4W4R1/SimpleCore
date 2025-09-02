@@ -12,7 +12,7 @@ namespace Systems.SimpleCore.Identifiers
     ///     Represents 32-bit non-unique identifier.
     /// </summary>
     [BurstCompile] [StructLayout(LayoutKind.Explicit)] [Serializable]
-    public struct ID32 : INumberIdentifier<uint>, IEquatable<ID32>
+    public struct ID32 : INumberIdentifier<uint>, IEquatable<ID32>, IComparable<ID32>
     {
         [FieldOffset(0)] [SerializeField] [HideInInspector] private uint value;
         [FieldOffset(4)] [SerializeField] [HideInInspector] private byte isCreated;
@@ -62,5 +62,13 @@ namespace Systems.SimpleCore.Identifiers
 
         /// <inheritdoc />
         public uint Value => value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(ID32 other)
+        {
+            int valueComparison = value.CompareTo(other.value);
+            if (valueComparison != 0) return valueComparison;
+            return isCreated.CompareTo(other.isCreated);
+        }
     }
 }

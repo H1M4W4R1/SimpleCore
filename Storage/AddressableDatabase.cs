@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Identifiers;
 using UnityEngine;
@@ -246,7 +245,7 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Item with given identifier or null if not found</returns>
-        [CanBeNull] public static TItemType GetFast<TItemType>()
+        [CanBeNull] private static TItemType GetFast<TItemType>()
             where TItemType : TUnityObject
         {
             _instance.EnsureLoaded();
@@ -294,7 +293,7 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         /// <param name="hashIdentifier">Identifier of item to get</param>
         /// <returns>Item with given identifier or null if not found</returns>
-        [CanBeNull] public static TUnityObject GetFast(HashIdentifier hashIdentifier)
+        [CanBeNull] private static TUnityObject GetFast(HashIdentifier hashIdentifier)
         {
             _instance.EnsureLoaded();
 

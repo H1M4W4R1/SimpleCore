@@ -5,7 +5,6 @@ using System.Reflection;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Saving.Abstract;
 using Systems.SimpleCore.Saving.Abstract.Transitions;
-using Systems.SimpleCore.Saving.Data;
 using Systems.SimpleCore.Saving.Data.Transitions;
 using UnityEngine.Assertions;
 

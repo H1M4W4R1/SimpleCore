@@ -13,7 +13,7 @@ namespace Systems.SimpleCore.Identifiers
     ///     Represents 64-bit non-unique identifier.
     /// </summary>
     [BurstCompile] [StructLayout(LayoutKind.Explicit)] [Serializable]
-    public struct ID64 : INumberIdentifier<ulong>, IEquatable<ID64>
+    public struct ID64 : INumberIdentifier<ulong>, IEquatable<ID64>, IComparable<ID64>
     {
         [FieldOffset(0)] [SerializeField] [HideInInspector] private uint4 vectorized; // 16B
 
@@ -64,5 +64,13 @@ namespace Systems.SimpleCore.Identifiers
 
         /// <inheritdoc />
         public ulong Value => value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(ID64 other)
+        {
+            int valueComparison = value.CompareTo(other.value);
+            if (valueComparison != 0) return valueComparison;
+            return isCreated.CompareTo(other.isCreated);
+        }
     }
 }
