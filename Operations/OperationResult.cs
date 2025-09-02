@@ -22,6 +22,8 @@
             this.result = result;
             this.data = data;
         }
+        
+        public static implicit operator OperationResult(OperationResult<TData> result) => result.result;
 
         public static implicit operator bool(OperationResult<TData> result) => result.result.resultCode == 0;
 
@@ -29,6 +31,8 @@
             => result
                 ? new OperationResult<TData>(OperationResult.GenericSuccess, default)
                 : new OperationResult<TData>(OperationResult.Undefined, default);
+        
+        public static explicit operator TData(OperationResult<TData> result) => result.data;
     }
 
     /// <summary>
