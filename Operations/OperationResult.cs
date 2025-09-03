@@ -38,6 +38,11 @@ namespace Systems.SimpleCore.Operations
         public const ushort SUCCESS_PERMITTED = ushort.MaxValue;
 
         /// <summary>
+        ///     Result code for DENIED error data.
+        /// </summary>
+        public const ushort ERROR_DENIED = ushort.MaxValue;
+
+        /// <summary>
         ///     Place for generic system and result codes
         /// </summary>
         public const ushort GENERIC_SPACE = 0;
