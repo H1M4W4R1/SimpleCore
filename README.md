@@ -18,9 +18,12 @@ SimpleCore is the foundational package of Simple Kit. It provides common buildin
 
 SimpleCore exposes several identifier types implemented as value types with lightweight equality/compare semantics and string formatting.
 
-### ID128 (non-unique numeric identifier)
+### Non-unique numeric identifiers
 
-`ID128` is a 128-bit value identifier based on `Unity.Mathematics.uint4`.
+SimpleCore provides non-unique numeric identifiers ranging from 8 to 512 bits where the size is always a double of 
+previous one (power of 2).
+
+Example of such identifier is `ID128` based on `Unity.Mathematics.uint4` which usage example is provided below.
 
 ```csharp
 using Systems.SimpleCore.Identifiers;
