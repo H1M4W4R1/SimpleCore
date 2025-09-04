@@ -203,9 +203,85 @@ bool found = myInputActionsAsset.GetActionAndBinding("Gameplay/Jump", someBindin
 bool isValid = action.IsValidDevice(bindingIndex, InputDeviceType.Keyboard);
 ```
 
-# Notes
+# Automatic objects and Addressables 
 
-- All identifiers are structs intended for high-performance comparisons and dictionary keys.
-- `OperationResult` supports implicit boolean conversion for convenience in control flow. Prefer the explicit helper methods when clarity is needed.
-- `InputAPI` assumes Unity Input System package is installed and actions/maps are configured.
+## Auto-creating ScriptableObject(s)
 
+Mark your `ScriptableObject` type with `AutoCreateAttribute` to have an asset auto-created under `Assets/Generated/{Path}/{TypeName}.asset` on editor domain reload. The created asset is also marked Addressable in the group named after `Path` and given the optional `Label`.
+
+```csharp
+using Systems.SimpleCore.Automation.Attributes;
+using UnityEngine;
+
+[AutoCreate("Core/Databases", label: "Core")] // Assets/Generated/Core/Databases/MyConfig.asset
+public sealed class MyConfig : ScriptableObject
+{
+    public int someValue = 10;
+}
+```
+
+Notes:
+- Auto-creation runs on load via an editor initializer and will create the folder if missing.
+- The asset is re-used if it already exists with the same type.
+- Auto-created assets are protected from moving/deleting by an editor postprocessor. Keep them under `Assets/Generated/`.
+
+## Auto-registering Addressables
+
+There are two automatic pathways:
+
+- ScriptableObjects marked with `AutoCreateAttribute` are automatically registered as Addressables in the group specified by `Path` and get the optional `Label`.
+- Prefabs that contain a component type marked with `AutoAddressableObjectAttribute` will be registered as Addressables when the prefab is saved.
+
+```csharp
+using Systems.SimpleCore.Automation.Attributes;
+using UnityEngine;
+
+[AutoAddressableObject(path: "Gameplay/Prefabs", label: "Gameplay")] 
+public sealed class LootMarker : MonoBehaviour { }
+```
+
+When you save a prefab containing `LootMarker`, the editor will add or move the prefab to the `Gameplay/Prefabs` Addressables group and assign the `Gameplay` label. If the group does not exist, it will be created (you may need to add schemas to the new group in Addressables settings).
+
+Warning: if Addressable group does not exist it will be created automatically, but it won't be compiled as you need to set-up schema manually - this is done to ensure user sets up desired mode (either remote or local storage).
+
+## AddressableDatabase
+
+`AddressableDatabase<TSelf, TUnityObject, TLoadType>` provides a simple, lazy-loaded registry of Addressable items by label with fast retrieval APIs.
+
+- Implement a concrete database and specify the Addressables label to load.
+- Use the two-type form for plain assets (`TLoadType` = `TUnityObject`), or the three-type form to load `GameObject` prefabs that contain a component of `TUnityObject`.
+
+```csharp
+using Systems.SimpleCore.Storage;
+using UnityEngine;
+
+// ScriptableObject assets labeled "Core"
+public sealed class ConfigDatabase : AddressableDatabase<ConfigDatabase, MyConfig>
+{
+    protected override string AddressableLabel => "Core";
+}
+
+// Prefabs labeled "Gameplay" that contain LootMarker component
+public sealed class LootDatabase : AddressableDatabase<LootDatabase, LootMarker, GameObject>
+{
+    protected override string AddressableLabel => "Gameplay";
+}
+
+// Usage (lazy, synchronous load on first access)
+MyConfig config = ConfigDatabase.GetExact<MyConfig>();
+var allLootMarkers = LootDatabase.GetAll<LootMarker>();
+int count = ConfigDatabase.Count;
+float progress = LootDatabase.LoadProgress;
+```
+
+APIs:
+- `GetExact<T>()`: fast lookup by concrete type.
+- `GetAbstract<T>()` / `GetAbstractUnsafe<T>()`: first item assignable to `T` (interfaces/abstract).
+- `GetAll<T>()` / `GetAllUnsafe<T>()`: all items assignable to `T`.
+- `Count`, `LoadProgress` for basic stats.
+
+Note: Prefer `GetExact<T>` whenever possible as it's using binary tree to reduce search time compared to `GetAbstract<T>` which scans every single object.
+
+Note: It's recommended to pre-load database using `StartLoading` method as database will wait to be loaded every time it's accessed and loading may take a while when a lot of objects are present (e.g. database of all items in game). Pre-loading is asynchronous and preferred toward on-spot loading which is fully-synchronous to ensure deterministic datbase results.
+
+You can even access loading progress of specific database using `LoadProgress` property when it's loaded in background to display nice progress bar.
