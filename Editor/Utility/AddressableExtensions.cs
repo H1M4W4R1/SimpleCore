@@ -1,4 +1,6 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using System.Collections.Generic;
+using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
@@ -36,15 +38,14 @@ namespace Systems.SimpleCore.Editor.Utility
             if (settings == null) return false;
 
             bool changesDetected = false;
-            
+
             // Find or create the group
             AddressableAssetGroup group = settings.FindGroup(groupName);
             if (group == null)
             {
                 // Create a new non-default, modifiable group with default schema
-                group = settings.CreateGroup(groupName, false, false, false, null, null);
-                //group.AddSchema<BundledAssetGroupSchema>();
-                //group.AddSchema<ContentUpdateGroupSchema>();
+                group = settings.CreateGroup(groupName, false, false, false,
+                    new List<AddressableAssetGroupSchema>());
                 changesDetected = true;
                 Debug.LogWarning($"Created group {groupName}, you need to add schema manually.");
             }
