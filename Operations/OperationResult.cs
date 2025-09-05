@@ -14,7 +14,7 @@ namespace Systems.SimpleCore.Operations
         /// </summary>
         public readonly TData data;
 
-        public OperationResult(OperationResult result, TData data)
+        internal OperationResult(OperationResult result, TData data)
         {
             this.result = result;
             this.data = data;
