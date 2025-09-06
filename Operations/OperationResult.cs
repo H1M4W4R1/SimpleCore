@@ -22,7 +22,7 @@ namespace Systems.SimpleCore.Operations
 
         public static implicit operator OperationResult(OperationResult<TData> result) => result.result;
 
-        public static implicit operator bool(OperationResult<TData> result) => result.result.resultCode == 0;
+        public static implicit operator bool(OperationResult<TData> result) => result.result;
 
         public static explicit operator TData(OperationResult<TData> result) => result.data;
     }
