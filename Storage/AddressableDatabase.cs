@@ -62,8 +62,9 @@ namespace Systems.SimpleCore.Storage
         /// <summary>
         ///     Gets loading progress
         /// </summary>
-        public static float LoadProgress => _instance._loadRequest.IsValid() ? _instance._loadRequest.PercentComplete : 0;
-        
+        public static float LoadProgress
+            => _instance._loadRequest.IsValid() ? _instance._loadRequest.PercentComplete : 0;
+
         public static int Count => _instance._Count;
 
         /// <summary>
@@ -208,7 +209,7 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Read-only list of items of specified type</returns>
-        [NotNull] public static IReadOnlyList<TItemType> GetAll<TItemType>()
+        public static ROListAccess<TItemType> GetAll<TItemType>()
             where TItemType : TUnityObject =>
             _instance._GetAllItems<TItemType>();
 
@@ -217,7 +218,7 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Read-only list of items of specified type</returns>
-        [NotNull] public static IReadOnlyList<TItemType> GetAllUnsafe<TItemType>()
+        public static ROListAccess<TItemType> GetAllUnsafe<TItemType>()
             => _instance._GetAllItems<TItemType>();
 
         /// <summary>
@@ -225,19 +226,20 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Read-only list of items of specified type</returns>
-        [NotNull] private IReadOnlyList<TItemType> _GetAllItems<TItemType>()
+        private ROListAccess<TItemType> _GetAllItems<TItemType>()
         {
             EnsureLoaded();
 
-            List<TItemType> items = new();
+            RWListAccess<TItemType> list = RWListAccess<TItemType>.Create();
+            List<TItemType> refList = list.List;
 
             // Loop through all items
             for (int i = 0; i < internalDataStorage.Count; i++)
             {
-                if (internalDataStorage[i] is TItemType item) items.Add(item);
+                if (internalDataStorage[i] is TItemType item) refList.Add(item);
             }
 
-            return items;
+            return list.ToReadOnly();
         }
 
         /// <summary>
@@ -285,37 +287,6 @@ namespace Systems.SimpleCore.Storage
                     return item;
 
             // If not found, return null
-            return null;
-        }
-
-        /// <summary>
-        ///     Gets item by identifier
-        /// </summary>
-        /// <param name="hashIdentifier">Identifier of item to get</param>
-        /// <returns>Item with given identifier or null if not found</returns>
-        [CanBeNull] private static TUnityObject GetFast(HashIdentifier hashIdentifier)
-        {
-            _instance.EnsureLoaded();
-
-            int low = 0;
-            int high = internalDataStorage.Count - 1;
-
-            while (low <= high)
-            {
-                int mid = (low + high) >> 1;
-                TUnityObject midItem = internalDataStorage[mid];
-
-                // Get object hash
-                HashIdentifier midItemHash = HashIdentifier.New(midItem);
-
-                int cmp = midItemHash.CompareTo(hashIdentifier);
-                if (cmp == 0) return midItem;
-                if (cmp < 0)
-                    low = mid + 1;
-                else
-                    high = mid - 1;
-            }
-
             return null;
         }
     }
