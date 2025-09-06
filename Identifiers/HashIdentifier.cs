@@ -24,13 +24,7 @@ namespace Systems.SimpleCore.Identifiers
         {
             return new HashIdentifier(ComputeTypeHash(type));
         }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] public static HashIdentifier New([NotNull] object obj)
-        {
-            Type type = obj.GetType();
-            return new HashIdentifier(ComputeTypeHash(type));
-        }
-
+ 
         /// <summary>
         /// Computes a deterministic (per process run) 64-bit hash for the given type.
         /// Works across polymorphic instances (different subclasses should give different hashes).

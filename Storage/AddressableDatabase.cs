@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Identifiers;
 using UnityEngine;
@@ -35,7 +36,7 @@ namespace Systems.SimpleCore.Storage
         /// <summary>
         ///     Internal data storage
         /// </summary>
-        protected static readonly List<TUnityObject> internalDataStorage = new();
+        protected static readonly List<AddressableDatabaseEntry<TUnityObject>> internalDataStorage = new();
 
         /// <summary>
         ///     Instance of this database
@@ -65,6 +66,10 @@ namespace Systems.SimpleCore.Storage
         public static float LoadProgress
             => _instance._loadRequest.IsValid() ? _instance._loadRequest.PercentComplete : 0;
 
+        /// <summary>
+        ///     Amount of entries in database, way off the real item count
+        ///     as base types are registered as well
+        /// </summary>
         public static int Count => _instance._Count;
 
         /// <summary>
@@ -132,7 +137,7 @@ namespace Systems.SimpleCore.Storage
         private void OnItemsLoadComplete(AsyncOperationHandle<IList<TLoadType>> _)
         {
             // Sort after loading to ensure binary search works correctly
-            internalDataStorage.Sort((a, b) => HashIdentifier.New(a).CompareTo(HashIdentifier.New(b)));
+            internalDataStorage.Sort((a, b) => a.hashIdentifier.CompareTo(b.hashIdentifier));
             _isLoaded = true;
             _isLoading = false;
             _isLoadingComplete = true;
@@ -145,12 +150,36 @@ namespace Systems.SimpleCore.Storage
             {
                 TUnityObject item = gameObj.GetComponent<TUnityObject>();
                 if (ReferenceEquals(item, null)) return;
-                internalDataStorage.Add(item);
+                RegisterItem(item);
                 return;
             }
 
             if (obj is not TUnityObject validItem) return;
-            internalDataStorage.Add(validItem);
+            RegisterItem(validItem);
+        }
+
+        private void RegisterItem([NotNull] TUnityObject item)
+        {
+            // Register base item
+            internalDataStorage.Add(
+                new AddressableDatabaseEntry<TUnityObject>(HashIdentifier.New(item.GetType()), item));
+
+            // Handle Unity Textures, Sprites etc.
+            if (item.GetType() == typeof(TUnityObject)) return;
+            
+            // Now handle all base types
+            Type baseType = item.GetType().BaseType;
+
+            // Handle all base types until core type is found
+            while (baseType != typeof(TUnityObject))
+            {
+                // Prevent null types (just in case)
+                if (baseType == null) break;
+
+                internalDataStorage.Add(
+                    new AddressableDatabaseEntry<TUnityObject>(HashIdentifier.New(baseType), item));
+                baseType = baseType.BaseType;
+            }
         }
 
         /// <summary>
@@ -160,83 +189,53 @@ namespace Systems.SimpleCore.Storage
         /// <returns>First item of specified type or null if no item of specified type is found</returns>
         /// <remarks>
         ///     Uses fast searching methodology, so it works only for items that are not abstact,
-        ///     for abstract items use <see cref="GetAbstract{TItemType}"/>
+        ///     for abstract items use <see cref="GetAny{TItemType}"/>
         /// </remarks>
         [CanBeNull] public static TItemType GetExact<TItemType>()
             where TItemType : TUnityObject, new() =>
-            GetFast<TItemType>();
+            GetFirstFast<TItemType>();
 
         /// <summary>
-        ///     Gets first item of specified type. To get items by interface
-        ///     use <see cref="GetAbstractUnsafe{TItemType}"/>
+        ///     Gets first item of specified type. 
         /// </summary>
         /// <typeparam name="TItemType">Item type to get </typeparam>
         /// <returns>First item of specified type or null if no item of specified type is found</returns>
-        [CanBeNull] public static TItemType GetAbstract<TItemType>()
+        [CanBeNull] public static TItemType GetAny<TItemType>()
             where TItemType : TUnityObject =>
-            _instance._GetItem<TItemType>();
+            GetFirstFast<TItemType>();
 
         /// <summary>
-        ///     Gets first item of specified type
-        /// </summary>
-        /// <typeparam name="TItemType">Item type to get </typeparam>
-        /// <returns>First item of specified type or null if no item of specified type is found</returns>
-        [CanBeNull] public static TItemType GetAbstractUnsafe<TItemType>()
-            => _instance._GetItem<TItemType>();
-
-        /// <summary>
-        ///     Gets first item of specified type.
-        /// </summary>
-        /// <typeparam name="TItemType">Item type to get </typeparam>
-        /// <returns>First item of specified type or null if no item of specified type is found</returns>
-        [CanBeNull] public TItemType _GetItem<TItemType>()
-        {
-            EnsureLoaded();
-
-            // Loop through all items
-            for (int i = 0; i < internalDataStorage.Count; i++)
-            {
-                if (internalDataStorage[i] is TItemType item) return item;
-            }
-
-            Assert.IsNotNull(null, "Item not found in database");
-            return default;
-        }
-
-        /// <summary>
-        ///     Gets all items of specified type. To get items by interface
-        ///     see <see cref="GetAllUnsafe{TItemType}"/>
+        ///     Gets all items of specified type. 
         /// </summary>
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Read-only list of items of specified type</returns>
+        /// <remarks>
+        ///     Using base type aka. <see cref="TUnityObject"/> won't work for this method.
+        /// </remarks>
         public static ROListAccess<TItemType> GetAll<TItemType>()
             where TItemType : TUnityObject =>
-            _instance._GetAllItems<TItemType>();
+            _instance.GetAllFast<TItemType>();
 
         /// <summary>
         ///     Gets all items of specified type
         /// </summary>
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Read-only list of items of specified type</returns>
-        public static ROListAccess<TItemType> GetAllUnsafe<TItemType>()
-            => _instance._GetAllItems<TItemType>();
-
-        /// <summary>
-        ///     Gets all items of specified type
-        /// </summary>
-        /// <typeparam name="TItemType">Type of item to get</typeparam>
-        /// <returns>Read-only list of items of specified type</returns>
-        private ROListAccess<TItemType> _GetAllItems<TItemType>()
+        private ROListAccess<TItemType> GetAllFast<TItemType>()
         {
             EnsureLoaded();
 
             RWListAccess<TItemType> list = RWListAccess<TItemType>.Create();
             List<TItemType> refList = list.List;
 
-            // Loop through all items
-            for (int i = 0; i < internalDataStorage.Count; i++)
+            // Get first item
+            int firstItem = GetFirstIndexFast<TItemType>();
+            if (firstItem == -1) return list.ToReadOnly();
+            
+            while (firstItem < internalDataStorage.Count && internalDataStorage[firstItem].entryObject is TItemType item)
             {
-                if (internalDataStorage[i] is TItemType item) refList.Add(item);
+                refList.Add(item);
+                firstItem++;
             }
 
             return list.ToReadOnly();
@@ -247,8 +246,19 @@ namespace Systems.SimpleCore.Storage
         /// </summary>
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Item with given identifier or null if not found</returns>
-        [CanBeNull] private static TItemType GetFast<TItemType>()
+        [CanBeNull] private static TItemType GetFirstFast<TItemType>()
             where TItemType : TUnityObject
+        {
+            int foundItem = GetFirstIndexFast<TItemType>();
+
+            // Prevent out of bounds
+            if (foundItem == -1) return null;
+
+            // Return item
+            return internalDataStorage[foundItem].entryObject as TItemType;
+        }
+
+        private static int GetFirstIndexFast<TItemType>()
         {
             _instance.EnsureLoaded();
             HashIdentifier hashIdentifier = HashIdentifier.New(typeof(TItemType));
@@ -260,10 +270,10 @@ namespace Systems.SimpleCore.Storage
             while (low <= high)
             {
                 int mid = (low + high) >> 1;
-                TUnityObject midItem = internalDataStorage[mid];
+                AddressableDatabaseEntry<TUnityObject> midItem = internalDataStorage[mid];
 
                 // Get object hash
-                HashIdentifier midItemHash = HashIdentifier.New(midItem);
+                HashIdentifier midItemHash = midItem.hashIdentifier;
 
                 int cmp = midItemHash.CompareTo(hashIdentifier);
                 if (cmp == 0)
@@ -279,15 +289,17 @@ namespace Systems.SimpleCore.Storage
             }
 
             // If not found, return null
-            if (foundMid == -1) return null;
+            if (foundMid == -1) return -1;
 
-            // Search for first item of type TItemType
-            for (int n = foundMid; n < internalDataStorage.Count; n++)
-                if (internalDataStorage[n] is TItemType item)
-                    return item;
+            // Run backward until first item is found
+            while (foundMid >= 0 && internalDataStorage[foundMid].entryObject is TItemType) foundMid--;
+
+            foundMid++;
 
             // If not found, return null
-            return null;
+            if (foundMid >= internalDataStorage.Count) return -1;
+
+            return foundMid;
         }
     }
 }
