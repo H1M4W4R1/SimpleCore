@@ -1,6 +1,6 @@
 ﻿using Systems.SimpleCore.Identifiers;
 
-namespace Systems.SimpleCore.Storage
+namespace Systems.SimpleCore.Storage.Databases
 {
     public struct AddressableDatabaseEntry<TEntryObject>
     {

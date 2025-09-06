@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Identifiers;
+using Systems.SimpleCore.Storage.Lists;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Assertions;
@@ -9,7 +10,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.ResourceManagement.Exceptions;
 using Object = UnityEngine.Object;
 
-namespace Systems.SimpleCore.Storage
+namespace Systems.SimpleCore.Storage.Databases
 {
     public abstract class
         AddressableDatabase<TSelf, TUnityObject> : AddressableDatabase<TSelf, TUnityObject, TUnityObject>
