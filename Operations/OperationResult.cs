@@ -2,31 +2,6 @@
 
 namespace Systems.SimpleCore.Operations
 {
-    public readonly ref struct OperationResult<TData>
-    {
-        /// <summary>
-        ///     Internal result
-        /// </summary>
-        public readonly OperationResult result;
-
-        /// <summary>
-        ///     Data associated with the result
-        /// </summary>
-        public readonly TData data;
-
-        internal OperationResult(OperationResult result, TData data)
-        {
-            this.result = result;
-            this.data = data;
-        }
-
-        public static implicit operator OperationResult(OperationResult<TData> result) => result.result;
-
-        public static implicit operator bool(OperationResult<TData> result) => result.result;
-
-        public static explicit operator TData(OperationResult<TData> result) => result.data;
-    }
-
     /// <summary>
     ///     Represents result of a generic operation
     /// </summary>
@@ -75,11 +50,6 @@ namespace Systems.SimpleCore.Operations
         ///     User result code, here external codes can be used to further specify the result
         /// </summary>
         [FieldOffset(sizeof(ushort) * 2)] public readonly uint userCode;
-
-        /// <summary>
-        ///     Converts result to result with data
-        /// </summary>
-        public OperationResult<TData> WithData<TData>(TData data) => new(this, data);
 
         /// <summary>
         ///     Creates new success result

@@ -1,13 +1,11 @@
 ﻿#if UNITY_EDITOR
 using System;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Automation.Attributes;
 using Systems.SimpleCore.Editor.Utility;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Systems.SimpleCore.Editor.Automation
 {

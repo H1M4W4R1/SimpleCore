@@ -85,7 +85,7 @@ string hex = runtimeTypeId.ToString();
 
 ## OperationResult
 
-`OperationResult` is a compact success/error value that carries three codes: `systemCode`, `resultCode`, and an optional `userCode`. It can also be paired with data via `WithData<T>()`.
+`OperationResult` is a compact success/error value that carries three codes: `systemCode`, `resultCode`, and an optional `userCode`.
 
 ```csharp
 using Systems.SimpleCore.Operations;
@@ -101,12 +101,6 @@ bool isErr = OperationResult.IsError(in error);     // true
 // Comparing
 bool sameSystem = OperationResult.IsFromSystem(in ok, OperationResult.GENERIC_SPACE);
 bool similar = OperationResult.AreSimilar(in error, in OperationResult.Error(OperationResult.GENERIC_SPACE, OperationResult.ERROR_DENIED));
-
-// With data
-var withData = ok.WithData(new Vector2Int(10, 20)); // OperationResult<Vector2Int>
-OperationResult plain = withData;                   // implicit conversion
-bool successBool = withData;                        // implicit bool (true when success)
-Vector2Int data = (Vector2Int)withData;             // explicit data extraction
 ```
 
 Tip: Packages like SimpleSkills define domain-specific helpers (e.g., `SkillOperations.Permitted()`/`Denied()`) on top of `OperationResult`. You can do the same for your domain by wrapping `OperationResult.Success/Error` with your own static helper methods.

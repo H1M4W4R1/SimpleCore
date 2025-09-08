@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Identifiers.Abstract;
-using Unity.Burst;
 using Unity.Burst.CompilerServices;
 using Unity.Mathematics;
 using UnityEngine;

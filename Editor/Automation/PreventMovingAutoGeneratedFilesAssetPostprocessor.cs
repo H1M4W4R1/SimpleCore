@@ -3,7 +3,6 @@ using System.Reflection;
 using Systems.SimpleCore.Automation.Attributes;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Assertions;
 
 namespace Systems.SimpleCore.Editor.Automation
 {
