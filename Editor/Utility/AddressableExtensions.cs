@@ -29,7 +29,6 @@ namespace Systems.SimpleCore.Editor.Utility
             [CanBeNull] string address = null,
             [CanBeNull] string label = null)
         {
-#if UNITY_EDITOR
             if (string.IsNullOrEmpty(asset) || string.IsNullOrEmpty(groupName)) return false;
 
             // Get default Addressables settings
@@ -89,7 +88,6 @@ namespace Systems.SimpleCore.Editor.Utility
             }
 
             return changesDetected;
-#endif
         }
     }
 }

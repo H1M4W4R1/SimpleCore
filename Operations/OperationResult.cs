@@ -10,11 +10,22 @@ namespace Systems.SimpleCore.Operations
         /// <summary>
         ///     Result code for PERMITTED success data.
         /// </summary>
+        /// <remarks>
+        /// By design, this shares the same resultCode value as <see cref="ERROR_DENIED"/>.
+        /// They are distinguished by the error bit in systemCode (bit 15), not by resultCode.
+        /// <see cref="AreSimilar"/> compares both systemCode and resultCode, so a success-permitted
+        /// and error-denied will only match if they also share the same systemCode (which includes
+        /// the error bit), making false matches impossible in practice.
+        /// </remarks>
         public const ushort SUCCESS_PERMITTED = ushort.MaxValue;
 
         /// <summary>
         ///     Result code for DENIED error data.
         /// </summary>
+        /// <remarks>
+        /// By design, this shares the same resultCode value as <see cref="SUCCESS_PERMITTED"/>.
+        /// See <see cref="SUCCESS_PERMITTED"/> remarks for details on why this is safe.
+        /// </remarks>
         public const ushort ERROR_DENIED = ushort.MaxValue;
 
         /// <summary>
@@ -79,7 +90,7 @@ namespace Systems.SimpleCore.Operations
         ///     result code
         /// </summary>
         public static bool IsFromSystem(in OperationResult operationResult, ushort systemCode)
-            => operationResult.systemCode == systemCode;
+            => (operationResult.systemCode & 0x7FFF) == (systemCode & 0x7FFF);
 
         /// <summary>
         ///     Checks if result is the same as other result, used to determine if we are reading correct,
@@ -106,6 +117,14 @@ namespace Systems.SimpleCore.Operations
 
         public static implicit operator bool(OperationResult operationResult) => IsSuccess(operationResult);
 
+        /// <remarks>
+        /// IMPORTANT: The <c>vectorized = 0</c> assignment MUST remain first. It clears all 8 bytes
+        /// of the overlapping union. The subsequent field assignments then write their values into the
+        /// correct offsets. Reordering these assignments (e.g., assigning systemCode before vectorized)
+        /// would cause vectorized to overwrite the previously set fields. The compiler requires all
+        /// fields to be assigned in a struct constructor, so removing the vectorized assignment is not
+        /// an option without restructuring the type.
+        /// </remarks>
         internal OperationResult(ushort systemCode, ushort resultCode, uint userCode = 0)
         {
             vectorized = 0;

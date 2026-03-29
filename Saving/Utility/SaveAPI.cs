@@ -338,6 +338,12 @@ namespace Systems.SimpleCore.Saving.Utility
             new();
 
         /// <summary>
+        ///     Tracks whether the adjacency map has been built at least once,
+        ///     distinguishing "built but empty" from "never built".
+        /// </summary>
+        private static bool _isAdjacencyMapBuilt;
+
+        /// <summary>
         ///     Computes the transition path from <typeparamref name="TFrom"/> to <typeparamref name="TTo"/>
         ///     save-file types (must derive from <see cref="SaveFileBase"/>)
         /// </summary>
@@ -440,7 +446,7 @@ namespace Systems.SimpleCore.Saving.Utility
             GetOrBuildAdjacencyMap()
         {
             // If we have already built the adjacency map, return it
-            if (_adjacencyMap is {Count: > 0}) return _adjacencyMap;
+            if (_isAdjacencyMapBuilt) return _adjacencyMap;
             _adjacencyMap.Clear();
 
             // We must examine loaded assemblies for types deriving from SaveFileBase
@@ -508,7 +514,17 @@ namespace Systems.SimpleCore.Saving.Utility
                 }
             }
 
+            _isAdjacencyMapBuilt = true;
             return _adjacencyMap;
+        }
+
+        /// <summary>
+        ///     Rebuilds the adjacency map. Use this after domain reload or hot-reload scenarios.
+        /// </summary>
+        public static void RebuildAdjacencyMap()
+        {
+            _isAdjacencyMapBuilt = false;
+            GetOrBuildAdjacencyMap();
         }
 
         /// <summary>

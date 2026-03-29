@@ -15,8 +15,8 @@ namespace Systems.SimpleCore.Identifiers
     [BurstCompile] [StructLayout(LayoutKind.Explicit)] [Serializable]
     public struct ID512 : INumberIdentifier<uint4x4>, IEquatable<ID512>, IComparable<ID512>
     {
-        [FieldOffset(0)] [SerializeField] [HideInInspector] public uint4x4 value;
-        [FieldOffset(32)] [SerializeField] [HideInInspector] public byte isCreated;
+        [FieldOffset(0)] [SerializeField] [HideInInspector] private uint4x4 value;
+        [FieldOffset(32)] [SerializeField] [HideInInspector] private byte isCreated;
 
 
         /// <inheritdoc />

@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using JetBrains.Annotations;
 using Systems.SimpleCore.Identifiers.Abstract;
 using Unity.Burst.CompilerServices;
@@ -27,7 +28,7 @@ namespace Systems.SimpleCore.Identifiers
         /// <summary>
         ///     Local counter for id creation
         /// </summary>
-        private static uint idGeneratorCounter;
+        private static long idGeneratorCounter;
 
         [FieldOffset(0)] [SerializeField] [HideInInspector] private int4 vectorized;
         [FieldOffset(0)] [SerializeField] [HideInInspector] private long timestamp;
@@ -81,7 +82,13 @@ namespace Systems.SimpleCore.Identifiers
         }
 
         public static Snowflake128 Empty => default;
-        public static Snowflake128 New() => new(DateTime.UtcNow.Ticks, idGeneratorCounter++);
+
+        public static unsafe Snowflake128 New()
+        {
+            long counterValue = Interlocked.Increment(ref idGeneratorCounter);
+            ulong convertedCounterValue = *(ulong*) &counterValue; // Conversion to ulong via pointer to prevent data loss
+            return new Snowflake128(DateTime.UtcNow.Ticks, convertedCounterValue);
+        }
 
         public string GetDebugTooltipText()
         {

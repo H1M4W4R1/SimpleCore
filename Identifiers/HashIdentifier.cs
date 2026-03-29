@@ -29,6 +29,12 @@ namespace Systems.SimpleCore.Identifiers
         /// Computes a deterministic (per process run) 64-bit hash for the given type.
         /// Works across polymorphic instances (different subclasses should give different hashes).
         /// </summary>
+        /// <remarks>
+        /// WARNING: This hash is NOT deterministic across application sessions. It relies on
+        /// <see cref="Type.GetHashCode"/> and <see cref="Assembly.GetHashCode"/> which are
+        /// identity-based. HashIdentifier values must NOT be serialized or persisted to disk,
+        /// as they will not match after a restart. This is a runtime-only identifier.
+        /// </remarks>
         public static ulong ComputeTypeHash([NotNull] Type type)
         {
             const ulong OFFSET = 14695981039346656037UL;

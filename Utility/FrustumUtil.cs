@@ -90,8 +90,8 @@ namespace Systems.SimpleCore.Utility
             CreatePlane(ftl, ntr, ftr, out float4 top);
             CreatePlane(ftr, ntr, nbr, out float4 right);
             CreatePlane(fbr, nbl, fbl, out float4 bottom);
-            CreatePlane(ftl, ftr, fbr, out float4 nearP);
-            CreatePlane(nbr, ntr, ntl, out float4 farP);
+            CreatePlane(nbl, nbr, ntr, out float4 nearP);
+            CreatePlane(ftr, fbr, fbl, out float4 farP);
 
             planes[0] = left;
             planes[1] = top;

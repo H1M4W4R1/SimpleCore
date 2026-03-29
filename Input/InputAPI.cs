@@ -21,6 +21,7 @@ namespace Systems.SimpleCore.Input
     {
         private const string ESCAPE = "<Keyboard>/escape";
         private const string ANY_KEY = "<Keyboard>/anyKey";
+        private static readonly Regex DevicePathRegex = new(@"(\<[^\<\>]*\>)|(\/[^\/]*\/)");
 
 #region Events
 
@@ -149,8 +150,7 @@ namespace Systems.SimpleCore.Input
 
 
             // Simple binding, check device data
-            Regex regex = new(@"(\<[^\<\>]*\>)|(\/[^\/]*\/)");
-            MatchCollection matches = regex.Matches(ignoreOverrides
+            MatchCollection matches = DevicePathRegex.Matches(ignoreOverrides
                 ? binding.path
                 : binding.effectivePath);
 
@@ -178,6 +178,33 @@ namespace Systems.SimpleCore.Input
                     continue;
 
                 return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        ///     Checks if an InputDevice matches the allowed device types.
+        ///     Used during rebinding to validate the candidate control's device.
+        /// </summary>
+        private static bool IsDeviceAllowed(
+            [NotNull] UnityEngine.InputSystem.InputDevice device,
+            InputDeviceType allowedDevices)
+        {
+            string deviceName = device.displayName;
+            string deviceLayout = device.layout;
+
+            for (byte i = 0; i < 31; i++)
+            {
+                InputDeviceType deviceType = (InputDeviceType) (1 << i);
+                if ((allowedDevices & deviceType) == 0) continue;
+
+                string localDeviceName = deviceType.ToString();
+                if (string.IsNullOrEmpty(localDeviceName)) continue;
+
+                if (string.Equals(localDeviceName, deviceLayout, StringComparison.InvariantCultureIgnoreCase) ||
+                    string.Equals(localDeviceName, deviceName, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
             }
 
             return false;
@@ -391,15 +418,23 @@ namespace Systems.SimpleCore.Input
             OnBindingChangeCompletedGlobalEvent += onBindingChangeCompleted;
             OnBindingDuplicateFoundGlobalEvent += onBindingDuplicateFound;
 
-            bool result = action.Rebind(allowedDevices);
+            void Detach0(BindingChangeInfo _)
+            {
+                OnBindingChangeStartedGlobalEvent -= onBindingChangeStarted;
+                OnBindingChangeCancelledGlobalEvent -= onBindingChangeCancelled;
+                OnBindingChangeCompletedGlobalEvent -= onBindingChangeCompleted;
+                OnBindingDuplicateFoundGlobalEvent -= onBindingDuplicateFound;
+                OnBindingChangeCompletedGlobalEvent -= Detach0;
+                OnBindingChangeCancelledGlobalEvent -= DetachCancel0;
+                OnBindingDuplicateFoundGlobalEvent -= Detach0;
+            }
+            void DetachCancel0(BindingChangeInfo info) => Detach0(info);
 
-            // Detach events
-            OnBindingChangeStartedGlobalEvent -= onBindingChangeStarted;
-            OnBindingChangeCancelledGlobalEvent -= onBindingChangeCancelled;
-            OnBindingChangeCompletedGlobalEvent -= onBindingChangeCompleted;
-            OnBindingDuplicateFoundGlobalEvent -= onBindingDuplicateFound;
+            OnBindingChangeCompletedGlobalEvent += Detach0;
+            OnBindingChangeCancelledGlobalEvent += DetachCancel0;
+            OnBindingDuplicateFoundGlobalEvent += Detach0;
 
-            return result;
+            return action.Rebind(allowedDevices);
         }
 
         /// <summary>
@@ -441,15 +476,23 @@ namespace Systems.SimpleCore.Input
             OnBindingChangeCompletedGlobalEvent += onBindingChangeCompleted;
             OnBindingDuplicateFoundGlobalEvent += onBindingDuplicateFound;
 
-            bool result = action.Rebind(bindingName, allowedDevices);
+            void Detach1(BindingChangeInfo _)
+            {
+                OnBindingChangeStartedGlobalEvent -= onBindingChangeStarted;
+                OnBindingChangeCancelledGlobalEvent -= onBindingChangeCancelled;
+                OnBindingChangeCompletedGlobalEvent -= onBindingChangeCompleted;
+                OnBindingDuplicateFoundGlobalEvent -= onBindingDuplicateFound;
+                OnBindingChangeCompletedGlobalEvent -= Detach1;
+                OnBindingChangeCancelledGlobalEvent -= DetachCancel1;
+                OnBindingDuplicateFoundGlobalEvent -= Detach1;
+            }
+            void DetachCancel1(BindingChangeInfo info) => Detach1(info);
 
-            // Detach events
-            OnBindingChangeStartedGlobalEvent -= onBindingChangeStarted;
-            OnBindingChangeCancelledGlobalEvent -= onBindingChangeCancelled;
-            OnBindingChangeCompletedGlobalEvent -= onBindingChangeCompleted;
-            OnBindingDuplicateFoundGlobalEvent -= onBindingDuplicateFound;
+            OnBindingChangeCompletedGlobalEvent += Detach1;
+            OnBindingChangeCancelledGlobalEvent += DetachCancel1;
+            OnBindingDuplicateFoundGlobalEvent += Detach1;
 
-            return result;
+            return action.Rebind(bindingName, allowedDevices);
         }
 
         /// <summary>
@@ -489,15 +532,23 @@ namespace Systems.SimpleCore.Input
             OnBindingChangeCompletedGlobalEvent += onBindingChangeCompleted;
             OnBindingDuplicateFoundGlobalEvent += onBindingDuplicateFound;
 
-            bool result = action.Rebind(bindingIndex, allowedDevices);
+            void Detach2(BindingChangeInfo _)
+            {
+                OnBindingChangeStartedGlobalEvent -= onBindingChangeStarted;
+                OnBindingChangeCancelledGlobalEvent -= onBindingChangeCancelled;
+                OnBindingChangeCompletedGlobalEvent -= onBindingChangeCompleted;
+                OnBindingDuplicateFoundGlobalEvent -= onBindingDuplicateFound;
+                OnBindingChangeCompletedGlobalEvent -= Detach2;
+                OnBindingChangeCancelledGlobalEvent -= DetachCancel2;
+                OnBindingDuplicateFoundGlobalEvent -= Detach2;
+            }
+            void DetachCancel2(BindingChangeInfo info) => Detach2(info);
 
-            // Detach events
-            OnBindingChangeStartedGlobalEvent -= onBindingChangeStarted;
-            OnBindingChangeCancelledGlobalEvent -= onBindingChangeCancelled;
-            OnBindingChangeCompletedGlobalEvent -= onBindingChangeCompleted;
-            OnBindingDuplicateFoundGlobalEvent -= onBindingDuplicateFound;
+            OnBindingChangeCompletedGlobalEvent += Detach2;
+            OnBindingChangeCancelledGlobalEvent += DetachCancel2;
+            OnBindingDuplicateFoundGlobalEvent += Detach2;
 
-            return result;
+            return action.Rebind(bindingIndex, allowedDevices);
         }
 
         /// <summary>
@@ -575,8 +626,10 @@ namespace Systems.SimpleCore.Input
                 // to save on computation time
                 if (!CancelIfDeviceIsNotAllowed) return;
 
-                // Check if device is allowed
-                if (IsValidDevice(action, bindingIndex, allowedDevices)) return;
+                // Check if the candidate control's device is allowed by inspecting
+                // the selectedControl from the rebinding operation, not the stale binding path.
+                if (rebindingOperation.selectedControl != null &&
+                    IsDeviceAllowed(rebindingOperation.selectedControl.device, allowedDevices)) return;
 
                 // If device is not allowed cancel rebind operation and return
                 _rebindingOperation?.Cancel();
@@ -918,7 +971,7 @@ namespace Systems.SimpleCore.Input
             bindingIndex = action.bindings.IndexOf(x => x.id == bindingId);
 
             // Check if binding was found
-            Assert.IsFalse(bindingIndex != -1, $"Cannot find binding with ID '{bindingId}' on '{action.name}'");
+            Assert.IsFalse(bindingIndex == -1, $"Cannot find binding with ID '{bindingId}' on '{action.name}'");
             return bindingIndex != -1;
         }
 
@@ -1003,6 +1056,10 @@ namespace Systems.SimpleCore.Input
         {
             if (change != InputActionChange.BoundControlsChanged) return;
 
+            // Suppress duplicate notifications during active rebinding operations,
+            // as OnOperationCompleted already fires the event explicitly.
+            if (_rebindingOperation != null) return;
+
             // Notify for update of all bindings in the action map
             switch (obj)
             {
@@ -1020,7 +1077,6 @@ namespace Systems.SimpleCore.Input
         private static void NotifyActionBindingsChanged([NotNull] InputAction action)
         {
             // Notify for update of all bindings in the action asset
-            // TODO: Check if this event is not raised twice during rebind via InputAPI and remove it if so.
             for (int bindingIndex = 0; bindingIndex < action.bindings.Count; bindingIndex++)
             {
                 string newEffectivePath = action.bindings[bindingIndex].effectivePath;

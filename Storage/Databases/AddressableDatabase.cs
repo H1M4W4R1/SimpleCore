@@ -35,7 +35,10 @@ namespace Systems.SimpleCore.Storage.Databases
         protected abstract string AddressableLabel { get; }
 
         /// <summary>
-        ///     Internal data storage
+        ///     Internal data storage.
+        ///     This field is static per closed generic type. Two databases with identical type parameters
+        ///     would share this storage. Do not inherit from a concrete (non-abstract) database class,
+        ///     as the derived type would reuse the base type's static storage if the type arguments match.
         /// </summary>
         protected static readonly List<AddressableDatabaseEntry<TUnityObject>> internalDataStorage = new();
 
@@ -129,6 +132,9 @@ namespace Systems.SimpleCore.Storage.Databases
         private void LoadSynchronously()
         {
             StartLoading();
+
+            if (!_loadRequest.IsValid()) return;
+
             _loadRequest.WaitForCompletion();
 
             // Mark load request as complete if it is not already
@@ -233,6 +239,8 @@ namespace Systems.SimpleCore.Storage.Databases
             int firstItem = GetFirstIndexFast<TItemType>();
             if (firstItem == -1) return list.ToReadOnly();
             
+            // Forward scan by runtime type is correct here. HashIdentifier does not support
+            // inheritance, so items of the same type share the same hash and are contiguous.
             while (firstItem < internalDataStorage.Count && internalDataStorage[firstItem].entryObject is TItemType item)
             {
                 refList.Add(item);
@@ -292,7 +300,11 @@ namespace Systems.SimpleCore.Storage.Databases
             // If not found, return null
             if (foundMid == -1) return -1;
 
-            // Run backward until first item is found
+            // Run backward until first item of this exact type is found.
+            // NOTE: This intentionally checks runtime type (is TItemType) rather than HashIdentifier,
+            // because HashIdentifier does not support inheritance. Items are registered per exact type
+            // and per base type with separate hashes, so matching by runtime type within the hash
+            // cluster is the correct behaviour here.
             while (foundMid >= 0 && internalDataStorage[foundMid].entryObject is TItemType) foundMid--;
 
             foundMid++;

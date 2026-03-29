@@ -56,7 +56,7 @@ namespace Systems.SimpleCore.Timing
             // Skip if time cannot pass
             if (!CanTimePass) return;
 
-            if (TickInterval <= 0f)
+            if (TickInterval <= 0f) // Prevents infinite loops
                 OnTick?.Invoke(timePassedSeconds);
             else
             {
@@ -64,8 +64,11 @@ namespace Systems.SimpleCore.Timing
 
                 // Handle interval passed, skip if tick cannot be performed
                 // execute for all ticks that completed on this frame
-                while (_tickTimer >= TickInterval) 
-                    OnTick?.Invoke(timePassedSeconds);
+                while (_tickTimer >= TickInterval)
+                {
+                    _tickTimer -= TickInterval;
+                    OnTick?.Invoke(TickInterval);
+                }
             }
         }
 
