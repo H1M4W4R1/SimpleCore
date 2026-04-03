@@ -34,8 +34,20 @@ namespace Systems.SimpleCore.Timing
         /// <summary>
         ///     Registered handlers will be called every frame or every turn.
         /// </summary>
-        public static event TickHandler OnTick;
-        
+        internal static event TickHandler OnTick;
+
+        public static void RegisterHandler(TickHandler handler)
+        {
+            EnsureExists();
+            OnTick += handler;
+        }
+
+        public static void UnregisterHandler(TickHandler handler)
+        {
+            EnsureExists();
+            OnTick -= handler;
+        }
+
         private void Awake()
         {
             // Prevent from being destroyed on scene change
@@ -72,7 +84,7 @@ namespace Systems.SimpleCore.Timing
             }
         }
 
-        public static void EnsureExists()
+        internal static void EnsureExists()
         {
             if (_instance) return;
 
