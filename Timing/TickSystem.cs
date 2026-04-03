@@ -50,6 +50,13 @@ namespace Systems.SimpleCore.Timing
 
         private void Awake()
         {
+            // If instance already exists (bool conversion) and is not this we shall destroy this instance
+            if (_instance && _instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             // Prevent from being destroyed on scene change
             DontDestroyOnLoad(gameObject);
             _instance = this;

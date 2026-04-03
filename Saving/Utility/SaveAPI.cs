@@ -6,6 +6,7 @@ using JetBrains.Annotations;
 using Systems.SimpleCore.Saving.Abstract;
 using Systems.SimpleCore.Saving.Abstract.Transitions;
 using Systems.SimpleCore.Saving.Data.Transitions;
+using UnityEngine;
 using UnityEngine.Assertions;
 
 namespace Systems.SimpleCore.Saving.Utility
@@ -223,6 +224,11 @@ namespace Systems.SimpleCore.Saving.Utility
                         current = InvokeDowngrade(step, current); break;
                     default: throw new InvalidOperationException($"Unhandled transition kind {step.Kind}.");
                 }
+
+                if (current != null) continue;
+                
+                Debug.LogWarning($"Transition step {step} returned null. Aborting chain, returning last valid file.");
+                return startingFile;
             }
 
             return current;
