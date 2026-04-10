@@ -22,9 +22,8 @@ namespace Systems.SimpleCore.Saving.Utility
         ///     Save file as default file if possible, otherwise as first supported file type.
         /// </summary>
         /// <param name="saveable">Object to save</param>
-        /// <returns>Save file</returns>
-        /// <exception cref="InvalidOperationException">Thrown if no default save file type is provided and no supported file types are declared.</exception>
-        [NotNull] public static SaveFileBase Save(
+        /// <returns>Save file, or null if the saveable declares no supported file types.</returns>
+        [CanBeNull] public static SaveFileBase Save(
             [NotNull] ISaveData saveable)
         {
             Assert.IsNotNull(saveable, "Saveable cannot be null.");
@@ -36,8 +35,10 @@ namespace Systems.SimpleCore.Saving.Utility
             {
                 IReadOnlyList<Type> supported = saveable.GetAllSupportedFileTypes();
                 if (supported == null || supported.Count == 0)
-                    throw new InvalidOperationException(
-                        "Saveable does not declare any supported save file types and no default is provided.");
+                {
+                    Debug.LogError("Saveable does not declare any supported save file types and no default is provided.");
+                    return null;
+                }
 
                 targetType = supported[0];
             }
@@ -50,9 +51,8 @@ namespace Systems.SimpleCore.Saving.Utility
         /// </summary>
         /// <param name="saveable">Object to save</param>
         /// <typeparam name="TSaveFile">Type of save file</typeparam>
-        /// <returns>Save file</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the saveable cannot be saved as the given type.</exception>
-        [NotNull] public static SaveFileBase SaveAs<TSaveFile>(
+        /// <returns>Save file, or null if the conversion failed.</returns>
+        [CanBeNull] public static SaveFileBase SaveAs<TSaveFile>(
             [NotNull] ISaveData saveable)
             where TSaveFile : SaveFileBase => SaveAs(saveable, typeof(TSaveFile));
 
@@ -61,9 +61,8 @@ namespace Systems.SimpleCore.Saving.Utility
         /// </summary>
         /// <param name="saveable">Object to save</param>
         /// <param name="targetSaveFileType">Type of save file</param>
-        /// <returns>Save file</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the saveable cannot be saved as the given type.</exception>
-        [NotNull] public static SaveFileBase SaveAs(
+        /// <returns>Save file, or null if no conversion path exists or the chain failed.</returns>
+        [CanBeNull] public static SaveFileBase SaveAs(
             [NotNull] ISaveData saveable,
             [NotNull] Type targetSaveFileType)
         {
@@ -90,10 +89,11 @@ namespace Systems.SimpleCore.Saving.Utility
                 bestStart = start;
             }
 
-            // If no path found, throw exception
             if (bestPath == null)
-                throw new InvalidOperationException(
-                    $"No conversion path found from any supported save-file types [{string.Join(", ", supportedTypes.Select(t => t.Name))}] to requested {targetSaveFileType.Name}.");
+            {
+                Debug.LogError($"No conversion path found from any supported save-file types [{string.Join(", ", supportedTypes.Select(t => t.Name))}] to requested {targetSaveFileType.Name}.");
+                return null;
+            }
 
             // Create initial save using the start type
             SaveFileBase current = (SaveFileBase) InvokeInterfaceSave(saveable, bestStart);
@@ -102,7 +102,10 @@ namespace Systems.SimpleCore.Saving.Utility
             current = ApplyConversionChain(current, bestPath.Value.Steps);
 
             if (!targetSaveFileType.IsInstanceOfType(current))
-                throw new InvalidOperationException("Conversion chain did not produce the requested target type.");
+            {
+                Debug.LogError($"Conversion chain did not produce the requested target type. Expected {targetSaveFileType.Name}, got {current?.GetType().Name ?? "null"}.");
+                return null;
+            }
 
             return current;
         }
@@ -113,7 +116,6 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <param name="saveable">Object to load into</param>
         /// <param name="file">File to load</param>
         /// <param name="fileType">Type of file</param>
-        /// <exception cref="InvalidOperationException">Thrown if the file cannot be loaded into the object.</exception>
         public static void Load(
             [NotNull] ISaveData saveable,
             [NotNull] SaveFileBase file,
@@ -151,11 +153,18 @@ namespace Systems.SimpleCore.Saving.Utility
             }
 
             if (bestPath == null)
-                throw new InvalidOperationException(
-                    $"No conversion path found from incoming type {fileType.Name} to any of the object's supported file types [{string.Join(", ", supportedTypes.Select(t => t.Name))}].");
+            {
+                Debug.LogError($"No conversion path found from incoming type {fileType.Name} to any of the object's supported file types [{string.Join(", ", supportedTypes.Select(t => t.Name))}].");
+                return;
+            }
 
             // Apply conversion chain to transform 'file' into desired supported type
             SaveFileBase transformed = ApplyConversionChain(file, bestPath.Value.Steps);
+            if (transformed == null)
+            {
+                Debug.LogError($"Conversion chain returned null when converting {fileType.Name}. Load aborted.");
+                return;
+            }
 
             // Finally call Load on the object's interface for the resulting type
             InvokeInterfaceLoad(saveable, bestTargetType, transformed);
@@ -167,7 +176,6 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <param name="saveable">Object to load into</param>
         /// <param name="file">File to load</param>
         /// <typeparam name="TFile">Type of file</typeparam>
-        /// <exception cref="InvalidOperationException">Thrown if the file cannot be loaded into the object.</exception>
         public static void Load<TFile>(
             [NotNull] ISaveData saveable,
             [NotNull] SaveFileBase file)
@@ -181,7 +189,6 @@ namespace Systems.SimpleCore.Saving.Utility
         /// </summary>
         /// <param name="saveable">Object to load into</param>
         /// <param name="file">File to load</param>
-        /// <exception cref="InvalidOperationException">Thrown if the file cannot be loaded into the object.</exception>
         public static void Load(
             [NotNull] ISaveData saveable,
             [NotNull] SaveFileBase file)
@@ -213,8 +220,12 @@ namespace Systems.SimpleCore.Saving.Utility
             {
                 SaveFileTransitionStep step = steps[transitionStepIndex];
                 if (!step.From.IsInstanceOfType(current))
-                    throw new InvalidOperationException(
-                        $"Expected a file of type {step.From.FullName} but got {current.GetType().FullName} at step {step}.");
+                {
+                    Debug.LogError($"Expected a file of type {step.From.FullName} but got {current.GetType().FullName} at step {step}. Aborting chain, returning last valid file.");
+                    return current;
+                }
+
+                SaveFileBase previousValid = current;
 
                 switch (step.Kind)
                 {
@@ -222,13 +233,15 @@ namespace Systems.SimpleCore.Saving.Utility
                         current = InvokeUpgrade(step, current); break;
                     case SaveFileTransitionKind.Downgrade:
                         current = InvokeDowngrade(step, current); break;
-                    default: throw new InvalidOperationException($"Unhandled transition kind {step.Kind}.");
+                    default:
+                        Debug.LogError($"Unhandled transition kind {step.Kind}. Aborting chain, returning last valid file.");
+                        return previousValid;
                 }
 
                 if (current != null) continue;
-                
+
                 Debug.LogWarning($"Transition step {step} returned null. Aborting chain, returning last valid file.");
-                return startingFile;
+                return previousValid;
             }
 
             return current;
@@ -271,7 +284,10 @@ namespace Systems.SimpleCore.Saving.Utility
             MethodInfo method = foundInterface.GetMethod("SaveAs",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null)
-                throw new InvalidOperationException($"ISaveable<{fileType.Name}> does not expose SaveAs() method.");
+            {
+                Debug.LogError($"ISaveable<{fileType.Name}> does not expose SaveAs() method.");
+                return null;
+            }
 
             return InvokeInterfaceMethod(saveable, foundInterface, method, Array.Empty<object>());
         }
@@ -282,8 +298,10 @@ namespace Systems.SimpleCore.Saving.Utility
             MethodInfo method = foundInterface.GetMethod("LoadAs",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null)
-                throw new InvalidOperationException(
-                    $"ISaveable<{fileType.Name}> does not expose LoadAs(...) method.");
+            {
+                Debug.LogError($"ISaveable<{fileType.Name}> does not expose LoadAs(...) method.");
+                return;
+            }
 
             InvokeInterfaceMethod(saveable, foundInterface, method, new object[] {file});
         }

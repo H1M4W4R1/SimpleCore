@@ -38,6 +38,7 @@ namespace Systems.SimpleCore.Timing
 
         public static void RegisterHandler(TickHandler handler)
         {
+            if (handler == null) return;
             EnsureExists();
             OnTick += handler;
         }

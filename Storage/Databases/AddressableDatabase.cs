@@ -312,6 +312,9 @@ namespace Systems.SimpleCore.Storage.Databases
             // If not found, return null
             if (foundMid >= internalDataStorage.Count) return -1;
 
+            // Validate the resolved index actually contains the requested type (guards against hash collisions)
+            if (internalDataStorage[foundMid].entryObject is not TItemType) return -1;
+
             return foundMid;
         }
     }
