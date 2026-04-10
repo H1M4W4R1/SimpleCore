@@ -55,58 +55,59 @@ bool isSame = itemId.Equals(new ID32(12345));
 
 ### Input System
 
-Manage keyboard, gamepad, and input rebinding:
+Manage input display names and rebinding:
 
 ```csharp
-// Initialize input system
+// Initialize input system once at startup
 InputAPI.Initialize();
 
-// Get input state
-var inputInfo = InputAPI.GetInputInfo("Jump");
-if (inputInfo.IsPressed)
-{
-    // Handle jump action
-}
+// Get the display name of the current binding for an action
+[SerializeField] private InputActionReference jumpActionRef;
 
-// Rebind input
-InputAPI.OnBindingChangeCompleted += (info) =>
+string displayName = InputAPI.GetBindingDisplayName(jumpActionRef);
+Debug.Log($"Jump is bound to: {displayName}");
+
+// Listen for rebind completion
+InputAPI.OnBindingChangeCompletedGlobalEvent += (info) =>
 {
-    Debug.Log($"Binding changed: {info.ActionName}");
+    Debug.Log($"Binding changed: {info.action.name} → {info.newEffectivePath}");
 };
 
-InputAPI.StartRebind("Jump", allowedDevices: new[] { InputDeviceType.Keyboard });
+// Start interactive rebind (keyboard only)
+InputAPI.Rebind(jumpActionRef, InputDeviceType.Keyboard);
 ```
 
 ### Save/Load System
 
-Implement saveable objects with custom file formats:
+Implement saveable objects with custom file formats. Define a save file type and a class that implements `ISaveData<T>`:
 
 ```csharp
-public class PlayerData : ISaveData<JsonSaveFile>
+public class PlayerSaveFile : SaveFileBase
+{
+    public int level;
+    public float health;
+}
+
+public class PlayerData : ISaveData<PlayerSaveFile>
 {
     public int Level { get; set; }
     public float Health { get; set; }
 
-    public void CollectData()
-    {
-        // Gather data before saving
-    }
+    public void CollectData() { /* optional pre-save preparation */ }
 
-    public JsonSaveFile BuildSaveFile()
-    {
-        // Create save file from collected data
-        return new JsonSaveFile { /* ... */ };
-    }
+    public PlayerSaveFile BuildSaveFile()
+        => new PlayerSaveFile { level = Level, health = Health };
 
-    public void ParseSaveFile(JsonSaveFile saveFile)
+    public void ParseSaveFile(PlayerSaveFile saveFile)
     {
-        // Load data from file
+        Level = saveFile.level;
+        Health = saveFile.health;
     }
 }
 
 // Usage
-var player = new PlayerData();
-var saveFile = player.SaveAs();
+var player = new PlayerData { Level = 5, Health = 100f };
+PlayerSaveFile saveFile = player.SaveAs();
 player.LoadAs(saveFile);
 ```
 
@@ -139,17 +140,23 @@ public class SkillDatabase : AddressableDatabase<SkillDatabase, SkillScriptableO
     protected override string AddressableLabel => "Skills";
 }
 
-// Usage
+// Assets load lazily on first access; or preload async:
 SkillDatabase.Instance.LoadAsync((entries) =>
 {
-    foreach (var entry in entries)
-    {
-        Debug.Log($"Loaded skill: {entry.Asset.name}");
-    }
+    foreach (SkillScriptableObject skill in entries)
+        Debug.Log($"Loaded skill: {skill.name}");
 });
 
-// Get specific asset
-var skill = SkillDatabase.Instance.Get(new ID32(skillId));
+// Query by exact concrete type (fast binary search)
+FireSkill fire = SkillDatabase.GetExact<FireSkill>();
+
+// Query by base/abstract type
+SkillScriptableObject any = SkillDatabase.GetAny<SkillScriptableObject>();
+
+// Get all assets of a type (returns a pooled read-only list)
+using ROListAccess<SkillScriptableObject> all = SkillDatabase.GetAll<SkillScriptableObject>();
+foreach (SkillScriptableObject skill in all.List)
+    Debug.Log(skill.name);
 ```
 
 ### Operation Results
@@ -177,9 +184,14 @@ if (OperationResult.IsSuccess(success))
     Debug.Log("Operation succeeded");
 }
 
-if (OperationResult.AreSimilar(success, error))
+// AreSimilar compares systemCode + resultCode, ignoring userCode.
+// Useful for matching the same operation type fired from different callers.
+var successA = OperationResult.Success(1, 0, userCode: 100);
+var successB = OperationResult.Success(1, 0, userCode: 200);
+
+if (OperationResult.AreSimilar(successA, successB))
 {
-    Debug.Log("Same operation, different result");
+    Debug.Log("Same operation type, different caller");
 }
 ```
 
@@ -206,7 +218,7 @@ Perform efficient vector rotations:
 using Systems.SimpleCore.Utility;
 
 float2 vec = new float2(1, 0);
-float rotatedVec = MathExtensions.Rotate(vec, math.PI / 4);
+float2 rotatedVec = MathExtensions.Rotate(vec, math.PI / 4);
 
 float3 vec3 = new float3(1, 0, 0);
 float3 rotated = MathExtensions.Rotate(vec3, new float3(0, 1, 0), math.PI / 2);
