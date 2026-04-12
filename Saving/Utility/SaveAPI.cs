@@ -34,7 +34,7 @@ namespace Systems.SimpleCore.Saving.Utility
             else
             {
                 IReadOnlyList<Type> supported = saveable.GetAllSupportedFileTypes();
-                if (supported == null || supported.Count == 0)
+                if (supported.Count == 0)
                 {
                     Debug.LogError("Saveable does not declare any supported save file types and no default is provided.");
                     return null;
@@ -103,7 +103,7 @@ namespace Systems.SimpleCore.Saving.Utility
 
             if (!targetSaveFileType.IsInstanceOfType(current))
             {
-                Debug.LogError($"Conversion chain did not produce the requested target type. Expected {targetSaveFileType.Name}, got {current?.GetType().Name ?? "null"}.");
+                Debug.LogError($"Conversion chain did not produce the requested target type. Expected {targetSaveFileType.Name}, got {current?.GetType().Name}.");
                 return null;
             }
 
@@ -160,11 +160,6 @@ namespace Systems.SimpleCore.Saving.Utility
 
             // Apply conversion chain to transform 'file' into desired supported type
             SaveFileBase transformed = ApplyConversionChain(file, bestPath.Value.Steps);
-            if (transformed == null)
-            {
-                Debug.LogError($"Conversion chain returned null when converting {fileType.Name}. Load aborted.");
-                return;
-            }
 
             // Finally call Load on the object's interface for the resulting type
             InvokeInterfaceLoad(saveable, bestTargetType, transformed);
@@ -207,7 +202,7 @@ namespace Systems.SimpleCore.Saving.Utility
         /// <summary>
         ///     Applies a conversion chain described by ordered steps. Returns final SaveFileBase instance.
         /// </summary>
-        private static SaveFileBase ApplyConversionChain(
+        [NotNull] private static SaveFileBase ApplyConversionChain(
             [NotNull] SaveFileBase startingFile,
             [NotNull] IReadOnlyList<SaveFileTransitionStep> steps)
         {
@@ -289,7 +284,7 @@ namespace Systems.SimpleCore.Saving.Utility
                 return null;
             }
 
-            return InvokeInterfaceMethod(saveable, foundInterface, method, Array.Empty<object>());
+            return InvokeInterfaceMethod(saveable, foundInterface, method);
         }
 
         private static void InvokeInterfaceLoad([NotNull] ISaveData saveable, Type fileType, SaveFileBase file)
@@ -303,7 +298,7 @@ namespace Systems.SimpleCore.Saving.Utility
                 return;
             }
 
-            InvokeInterfaceMethod(saveable, foundInterface, method, new object[] {file});
+            InvokeInterfaceMethod(saveable, foundInterface, method, file);
         }
 
         private static object InvokeInterfaceMethod(

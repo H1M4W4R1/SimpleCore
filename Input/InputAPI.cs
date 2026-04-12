@@ -188,7 +188,7 @@ namespace Systems.SimpleCore.Input
         ///     Used during rebinding to validate the candidate control's device.
         /// </summary>
         private static bool IsDeviceAllowed(
-            [NotNull] UnityEngine.InputSystem.InputDevice device,
+            [NotNull] InputDevice device,
             InputDeviceType allowedDevices)
         {
             string deviceName = device.displayName;
@@ -275,7 +275,7 @@ namespace Systems.SimpleCore.Input
                 return string.Empty;
             }
 
-            StringBuilder resultBuilder = new StringBuilder();
+            StringBuilder resultBuilder = new();
             
             // Get binding names
             for (int i = 0; i < bindings.Length; i++)
@@ -447,7 +447,7 @@ namespace Systems.SimpleCore.Input
             // Get action bindings count
             Assert.IsTrue(action.bindings.Count == 1,
                 $"Cannot rebind action '{action.name}' with multiple bindings. " +
-                $"You need to specify binding name or index.");
+                "You need to specify binding name or index.");
 
             // Rebind action
             return action.Rebind(0, allowedDevices);

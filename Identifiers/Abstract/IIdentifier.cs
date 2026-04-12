@@ -17,6 +17,6 @@ namespace Systems.SimpleCore.Identifiers.Abstract
         /// <summary>
         ///     Get nicely-formatted string representation of the identifier.
         /// </summary>
-        [NotNull] public string GetDebugTooltipText();
+        [UsedImplicitly] [NotNull] public string GetDebugTooltipText();
     }
 }
