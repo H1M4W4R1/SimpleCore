@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
+using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
 
 namespace Systems.SimpleCore.Editor.Utility
@@ -33,19 +34,23 @@ namespace Systems.SimpleCore.Editor.Utility
 
             // Get default Addressables settings
             AddressableAssetSettings settings = AddressableAssetSettingsDefaultObject.Settings;
-            if (settings == null) return false;
+            if (ReferenceEquals(settings, null)) return false;
 
-            bool changesDetected = false;
+            bool changesDetected = RemoveNullAddressableGroups(settings);
 
             // Find or create the group
             AddressableAssetGroup group = settings.FindGroup(groupName);
-            if (group == null)
+            if (ReferenceEquals(group, null) || !group)
             {
-                // Create a new non-default, modifiable group with default schema
-                group = settings.CreateGroup(groupName, false, false, false,
-                    new List<AddressableAssetGroupSchema>());
+                // Create a new non-default, modifiable group with the default local packed schemas.
+                group = settings.CreateGroup(groupName, false, false, false, null,
+                    typeof(ContentUpdateGroupSchema),
+                    typeof(BundledAssetGroupSchema));
                 changesDetected = true;
-                Debug.LogWarning($"Created group {groupName}, you need to add schema manually.");
+            }
+            else if (EnsureDefaultSchemas(group))
+            {
+                changesDetected = true;
             }
 
             // Get asset GUID and move/create entry
@@ -53,7 +58,7 @@ namespace Systems.SimpleCore.Editor.Utility
             AddressableAssetEntry entry = settings.CreateOrMoveEntry(assetGuid, group, false, false);
 
             // Skip if entry is not found
-            if (entry == null) return changesDetected;
+            if (ReferenceEquals(entry, null)) return changesDetected;
 
             // Optionally set custom address
             if (!string.IsNullOrEmpty(address))
@@ -88,6 +93,65 @@ namespace Systems.SimpleCore.Editor.Utility
             }
 
             return changesDetected;
+        }
+
+        /// <summary>
+        /// Removes null group references left by deleted Addressable groups.
+        /// </summary>
+        /// <param name="settings">Addressable settings asset to clean.</param>
+        /// <returns>True when settings were changed.</returns>
+        public static bool RemoveNullAddressableGroups([NotNull] AddressableAssetSettings settings)
+        {
+            if (ReferenceEquals(settings, null)) return false;
+
+            bool changesDetected = false;
+
+            for (int groupIndex = settings.groups.Count - 1; groupIndex >= 0; groupIndex--)
+            {
+                AddressableAssetGroup group = settings.groups[groupIndex];
+                if (ReferenceEquals(group, null) || !group)
+                {
+                    settings.groups.RemoveAt(groupIndex);
+                    changesDetected = true;
+                    continue;
+                }
+            }
+
+            if (!changesDetected) return false;
+
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssets();
+            return true;
+        }
+
+        private static bool EnsureDefaultSchemas([NotNull] AddressableAssetGroup group)
+        {
+            if (ReferenceEquals(group, null) || !group) return false;
+
+            bool changesDetected = false;
+
+            if (ReferenceEquals(group.GetSchema<ContentUpdateGroupSchema>(), null))
+            {
+                AddressableAssetGroupSchema contentUpdateSchema = group.AddSchema<ContentUpdateGroupSchema>(false);
+                if (!ReferenceEquals(contentUpdateSchema, null))
+                {
+                    changesDetected = true;
+                }
+            }
+
+            if (ReferenceEquals(group.GetSchema<BundledAssetGroupSchema>(), null))
+            {
+                AddressableAssetGroupSchema bundledSchema = group.AddSchema<BundledAssetGroupSchema>(false);
+                if (!ReferenceEquals(bundledSchema, null))
+                {
+                    changesDetected = true;
+                }
+            }
+
+            if (!changesDetected) return false;
+
+            EditorUtility.SetDirty(group);
+            return true;
         }
     }
 }
