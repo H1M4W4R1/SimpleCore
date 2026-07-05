@@ -26,6 +26,8 @@ namespace Systems.SimpleCore.Editor.Automation
             for (int i = 0; i < AppDomain.CurrentDomain.GetAssemblies().Length; i++)
             {
                 Assembly assembly = AppDomain.CurrentDomain.GetAssemblies()[i];
+                string assemblyName = assembly.GetName().Name;
+                if (assemblyName.EndsWith(".Tests", StringComparison.Ordinal)) continue;
 
                 // Loop through all types in assembly
                 Type[] types = assembly.GetTypes();
@@ -100,7 +102,7 @@ namespace Systems.SimpleCore.Editor.Automation
                 // Create asset
                 AssetDatabase.CreateAsset(instance, path);
                 AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
+                AssetDatabase.Refresh();  
 
                 Debug.Log($"Created ScriptableObject of type {type.FullName} at {path}");
             }
