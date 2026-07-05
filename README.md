@@ -70,7 +70,7 @@ Debug.Log($"Jump is bound to: {displayName}");
 // Listen for rebind completion
 InputAPI.OnBindingChangeCompletedGlobalEvent += (info) =>
 {
-    Debug.Log($"Binding changed: {info.action.name} → {info.newEffectivePath}");
+    Debug.Log($"Binding changed: {info.action.name} -> {info.newEffectivePath}");
 };
 
 // Start interactive rebind (keyboard only)
@@ -82,7 +82,10 @@ InputAPI.Rebind(jumpActionRef, InputDeviceType.Keyboard);
 Implement saveable objects with custom file formats. Define a save file type and a class that implements `ISaveData<T>`:
 
 ```csharp
-public class PlayerSaveFile : SaveFileBase
+using System;
+
+[Serializable]
+public sealed class PlayerSaveFile : SaveFileBase
 {
     public int level;
     public float health;
