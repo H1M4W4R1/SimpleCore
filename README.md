@@ -38,9 +38,9 @@ Use type-safe identifiers for objects, entities, or items:
 
 ```csharp
 // Create identifiers of various sizes
-var itemId = new ID32(12345);
-var playerId = new ID64(9876543210);
-var uniqueId = new Snowflake128();
+ID32 itemId = new ID32(12345);
+ID64 playerId = new ID64(9876543210);
+Snowflake128 uniqueId = Snowflake128.New();
 
 // Check if an identifier was created
 if (itemId.IsCreated)
@@ -67,14 +67,8 @@ InputAPI.Initialize();
 string displayName = InputAPI.GetBindingDisplayName(jumpActionRef);
 Debug.Log($"Jump is bound to: {displayName}");
 
-// Listen for rebind completion
-InputAPI.OnBindingChangeCompletedGlobalEvent += (info) =>
-{
-    Debug.Log($"Binding changed: {info.action.name} -> {info.newEffectivePath}");
-};
-
 // Start interactive rebind (keyboard only)
-InputAPI.Rebind(jumpActionRef, InputDeviceType.Keyboard);
+bool rebindStarted = InputAPI.Rebind(jumpActionRef, InputDeviceType.Keyboard);
 ```
 
 ### Save/Load System
@@ -109,7 +103,7 @@ public class PlayerData : ISaveData<PlayerSaveFile>
 }
 
 // Usage
-var player = new PlayerData { Level = 5, Health = 100f };
+PlayerData player = new PlayerData { Level = 5, Health = 100f };
 PlayerSaveFile saveFile = player.SaveAs();
 player.LoadAs(saveFile);
 ```
@@ -146,8 +140,11 @@ public class SkillDatabase : AddressableDatabase<SkillDatabase, SkillScriptableO
 // Assets load lazily on first access; or preload async:
 SkillDatabase.Instance.LoadAsync((entries) =>
 {
-    foreach (SkillScriptableObject skill in entries)
+    for (int skillIndex = 0; skillIndex < entries.Count; skillIndex++)
+    {
+        SkillScriptableObject skill = entries[skillIndex];
         Debug.Log($"Loaded skill: {skill.name}");
+    }
 });
 
 // Query by exact concrete type (fast binary search)
@@ -158,8 +155,11 @@ SkillScriptableObject any = SkillDatabase.GetAny<SkillScriptableObject>();
 
 // Get all assets of a type (returns a pooled read-only list)
 using ROListAccess<SkillScriptableObject> all = SkillDatabase.GetAll<SkillScriptableObject>();
-foreach (SkillScriptableObject skill in all.List)
+for (int skillIndex = 0; skillIndex < all.List.Count; skillIndex++)
+{
+    SkillScriptableObject skill = all.List[skillIndex];
     Debug.Log(skill.name);
+}
 ```
 
 ### Operation Results
@@ -168,14 +168,14 @@ Use operation results for chainable error handling:
 
 ```csharp
 // Create success result
-var success = OperationResult.Success(
+OperationResult success = OperationResult.Success(
     systemCode: 1,
     resultCode: 0,
     userCode: 100
 );
 
 // Create error result
-var error = OperationResult.Error(
+OperationResult error = OperationResult.Error(
     systemCode: 1,
     resultCode: 1,
     userCode: 200
@@ -189,8 +189,8 @@ if (OperationResult.IsSuccess(success))
 
 // AreSimilar compares systemCode + resultCode, ignoring userCode.
 // Useful for matching the same operation type fired from different callers.
-var successA = OperationResult.Success(1, 0, userCode: 100);
-var successB = OperationResult.Success(1, 0, userCode: 200);
+OperationResult successA = OperationResult.Success(1, 0, userCode: 100);
+OperationResult successB = OperationResult.Success(1, 0, userCode: 200);
 
 if (OperationResult.AreSimilar(successA, successB))
 {
@@ -240,6 +240,7 @@ float3 rotated = MathExtensions.Rotate(vec3, new float3(0, 1, 0), math.PI / 2);
 - **Storage/** - Addressable databases and list access structures
 - **Timing/** - Global tick system for updates
 - **Utility/** - Helper functions and extensions
+- **Tests/EditMode/** - Editor-only Unity Test Framework coverage for core runtime APIs
 
 ### Key Patterns
 
@@ -247,6 +248,12 @@ float3 rotated = MathExtensions.Rotate(vec3, new float3(0, 1, 0), math.PI / 2);
 - **Burst Compilation**: Identifier types are Burst-compiled for performance
 - **Layout Optimization**: Explicit field layout used in operations and identifiers for compact memory usage
 - **Static Instances**: Databases and timing systems use static singletons for global access
+
+### Tests
+
+SimpleCore includes an Editor-only test assembly at `Tests/EditMode/SimpleCore.Tests.asmdef`.
+It references Unity Test Framework and has `includePlatforms` set to `Editor`, so the tests are not compiled into player builds.
+Run them from Unity Test Runner under Edit Mode when validating package changes.
 
 ## License
 
