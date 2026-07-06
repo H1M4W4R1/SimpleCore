@@ -1,5 +1,6 @@
 ﻿#if UNITY_EDITOR
 using System;
+using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
@@ -22,23 +23,31 @@ namespace Systems.SimpleCore.Editor.Automation
         {
             bool anyObjectChanged = false;
 
-            // Loop through all assemblies in project
-            for (int i = 0; i < AppDomain.CurrentDomain.GetAssemblies().Length; i++)
+            AssetDatabase.StartAssetEditing();
+            try
             {
-                Assembly assembly = AppDomain.CurrentDomain.GetAssemblies()[i];
-                string assemblyName = assembly.GetName().Name;
-                if (assemblyName.EndsWith(".Tests", StringComparison.Ordinal)) continue;
-
-                // Loop through all types in assembly
-                Type[] types = assembly.GetTypes();
-                for (int index = 0; index < types.Length; index++)
+                // Loop through all assemblies in project
+                for (int i = 0; i < AppDomain.CurrentDomain.GetAssemblies().Length; i++)
                 {
-                    Type type = types[index];
-                    // Check if type is a ScriptableObject, if not, skip
-                    if (!typeof(ScriptableObject).IsAssignableFrom(type)) continue;
-                    if (!BuildObject(type)) continue;
-                    anyObjectChanged = true;
+                    Assembly assembly = AppDomain.CurrentDomain.GetAssemblies()[i];
+                    string assemblyName = assembly.GetName().Name;
+                    if (assemblyName.EndsWith(".Tests", StringComparison.Ordinal)) continue;
+
+                    // Loop through all types in assembly
+                    Type[] types = assembly.GetTypes();
+                    for (int index = 0; index < types.Length; index++)
+                    {
+                        Type type = types[index];
+                        // Check if type is a ScriptableObject, if not, skip
+                        if (!typeof(ScriptableObject).IsAssignableFrom(type)) continue;
+                        if (!BuildObject(type)) continue;
+                        anyObjectChanged = true;
+                    }
                 }
+            }
+            finally
+            {
+                AssetDatabase.StopAssetEditing();
             }
 
             // Save and refresh if any object was changed
@@ -54,7 +63,7 @@ namespace Systems.SimpleCore.Editor.Automation
 
             // Check if object has AutoCreatedObject attribute
             AutoCreateAttribute attribute = type.GetCustomAttribute<AutoCreateAttribute>(true);
-            if (attribute == null) return false;
+            if (ReferenceEquals(attribute, null)) return false;
 
             string typeName = type.Name;
 
@@ -67,10 +76,9 @@ namespace Systems.SimpleCore.Editor.Automation
  
 
             // Ensure directory exists
-            if (!System.IO.Directory.Exists(directory))
+            if (!Directory.Exists(directory))
             {
-                System.IO.Directory.CreateDirectory(directory);
-                AssetDatabase.Refresh();
+                Directory.CreateDirectory(directory);
             }
 
             // Try load existing asset
@@ -78,7 +86,7 @@ namespace Systems.SimpleCore.Editor.Automation
                 AssetDatabase.LoadAssetAtPath(path, typeof(ScriptableObject));
             ScriptableObject instance = null;
 
-            if (existing != null)
+            if (!ReferenceEquals(existing, null))
             {
                 // Check if type matches
                 if (existing.GetType() == type)
@@ -95,20 +103,26 @@ namespace Systems.SimpleCore.Editor.Automation
             }
 
             // Create new instance if not found
-            if (instance == null)
+            if (ReferenceEquals(instance, null))
             {
+                if (!CanCreateStableAsset(type, path)) return false;
+
+                if (File.Exists(path))
+                {
+                    Debug.LogWarning($"Replacing broken generated ScriptableObject asset at {path}");
+                    AssetDatabase.DeleteAsset(path);
+                }
+
                 instance = ScriptableObject.CreateInstance(type);
 
                 // Create asset
                 AssetDatabase.CreateAsset(instance, path);
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();  
 
                 Debug.Log($"Created ScriptableObject of type {type.FullName} at {path}");
             }
 
             // Check if instance is null  
-            if (instance == null)
+            if (ReferenceEquals(instance, null))
             {
                 Debug.LogError($"Failed to create ScriptableObject of type {type.FullName}");
                 return false; 
@@ -116,10 +130,36 @@ namespace Systems.SimpleCore.Editor.Automation
 
             // Mark asset as addressable
             AddressableExtensions.MarkAssetAddressable(path, attribute.Path, label: attribute.Label);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
 
             return true;
+        }
+
+        private static bool CanCreateStableAsset([NotNull] Type type, [NotNull] string path)
+        {
+            MonoScript script = FindScriptForType(type);
+            if (script) return true;
+
+            Debug.LogError(
+                $"Cannot create generated ScriptableObject asset at {path} for {type.FullName}. " +
+                "Unity cannot resolve a MonoScript for this type. Move the concrete ScriptableObject " +
+                "class into its own matching .cs file so Unity can serialize the generated asset safely.");
+            return false;
+        }
+
+        [CanBeNull]
+        private static MonoScript FindScriptForType([NotNull] Type type)
+        {
+            string[] scriptGuids = AssetDatabase.FindAssets(type.Name + " t:MonoScript");
+            for (int scriptIndex = 0; scriptIndex < scriptGuids.Length; scriptIndex++)
+            {
+                string scriptPath = AssetDatabase.GUIDToAssetPath(scriptGuids[scriptIndex]);
+                MonoScript script = AssetDatabase.LoadAssetAtPath<MonoScript>(scriptPath);
+                if (!script) continue;
+                if (script.GetClass() != type) continue;
+                return script;
+            }
+
+            return null;
         }
 
         static AutoGeneratedScriptableObjectCreator()

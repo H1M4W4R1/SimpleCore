@@ -85,7 +85,7 @@ public sealed class PlayerSaveFile : SaveFileBase
     public float health;
 }
 
-public class PlayerData : ISaveData<PlayerSaveFile>
+public sealed class PlayerData : ISaveData<PlayerSaveFile>
 {
     public int Level { get; set; }
     public float Health { get; set; }
@@ -132,7 +132,7 @@ TickSystem.Instance.AutomaticTick = false; // Manual tick control
 Create type-safe databases of addressable assets:
 
 ```csharp
-public class SkillDatabase : AddressableDatabase<SkillDatabase, SkillScriptableObject>
+public sealed class SkillDatabase : AddressableDatabase<SkillDatabase, SkillScriptableObject>
 {
     protected override string AddressableLabel => "Skills";
 }
@@ -204,14 +204,15 @@ Mark ScriptableObjects for automatic generation:
 
 ```csharp
 [AutoCreate("Skills/My Skill", "Skills")]
-public class MySkill : ScriptableObject
+public sealed class MySkill : ScriptableObject
 {
     public string skillName;
     public float cooldown;
 }
 
-// File is automatically created in Assets/Generated/Skills/ at build time
+// File is automatically created in Assets/Generated/Skills/My Skill/ at build time
 ```
+Concrete auto-created ScriptableObject types must live in a matching `.cs` file that Unity can resolve as a `MonoScript`. Editor automation skips types that cannot be serialized as stable Unity assets and logs an error instead of repeatedly creating broken files under `Assets/Generated/`.
 
 ### Math Extensions
 
