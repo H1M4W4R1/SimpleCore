@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using JetBrains.Annotations;
+using UnityEngine;
 
 namespace Systems.SimpleCore.Timing
 {
@@ -36,7 +37,7 @@ namespace Systems.SimpleCore.Timing
         /// </summary>
         internal static event TickHandler OnTick;
 
-        public static void RegisterHandler(TickHandler handler)
+        public static void RegisterHandler([CanBeNull] TickHandler handler)
         {
             if (handler == null) return;
             EnsureExists();

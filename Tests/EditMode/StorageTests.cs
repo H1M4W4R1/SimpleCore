@@ -9,16 +9,16 @@ namespace Systems.SimpleCore.Tests
 {
     public sealed class StorageTests
     {
-        private readonly List<UnityEngine.Object> _createdObjects = new List<UnityEngine.Object>();
+        private readonly List<Object> _createdObjects = new List<Object>();
 
         [TearDown]
         public void TearDown()
         {
             for (int objectIndex = 0; objectIndex < _createdObjects.Count; objectIndex++)
             {
-                UnityEngine.Object createdObject = _createdObjects[objectIndex];
+                Object createdObject = _createdObjects[objectIndex];
                 if (ReferenceEquals(createdObject, null)) continue;
-                UnityEngine.Object.DestroyImmediate(createdObject);
+                Object.DestroyImmediate(createdObject);
             }
 
             _createdObjects.Clear();

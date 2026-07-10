@@ -28,7 +28,7 @@ namespace Systems.SimpleCore.Tests
             Assert.IsFalse(result);
             Assert.AreEqual((ushort)(7 | (1 << 15)), result.systemCode);
             Assert.IsTrue(OperationResult.IsFromSystem(result, 7));
-            Assert.IsTrue(OperationResult.IsFromSystem(result, (ushort)(7 | (1 << 15))));
+            Assert.IsTrue(OperationResult.IsFromSystem(result, 7 | (1 << 15)));
         }
 
         [Test]

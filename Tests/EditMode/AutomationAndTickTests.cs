@@ -19,14 +19,13 @@ namespace Systems.SimpleCore.Tests
                 _registeredHandler = null;
             }
 
-            TickSystem[] tickSystems = UnityEngine.Object.FindObjectsByType<TickSystem>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+            TickSystem[] tickSystems = Object.FindObjectsByType<TickSystem>(
+                FindObjectsInactive.Include);
             for (int tickSystemIndex = 0; tickSystemIndex < tickSystems.Length; tickSystemIndex++)
             {
                 TickSystem tickSystem = tickSystems[tickSystemIndex];
                 if (ReferenceEquals(tickSystem, null)) continue;
-                UnityEngine.Object.DestroyImmediate(tickSystem.gameObject);
+                Object.DestroyImmediate(tickSystem.gameObject);
             }
         }
 
@@ -64,7 +63,7 @@ namespace Systems.SimpleCore.Tests
 
             TickSystem.RegisterHandler(handler);
 
-            TickSystem instance = UnityEngine.Object.FindAnyObjectByType<TickSystem>(FindObjectsInactive.Include);
+            TickSystem instance = Object.FindAnyObjectByType<TickSystem>(FindObjectsInactive.Include);
 
             Assert.IsFalse(ReferenceEquals(instance, null));
             Assert.IsTrue(instance.gameObject.activeSelf);
@@ -79,7 +78,7 @@ namespace Systems.SimpleCore.Tests
             TickSystem.RegisterHandler(handler);
             TickSystem.UnregisterHandler(handler);
 
-            TickSystem instance = UnityEngine.Object.FindAnyObjectByType<TickSystem>(FindObjectsInactive.Include);
+            TickSystem instance = Object.FindAnyObjectByType<TickSystem>(FindObjectsInactive.Include);
 
             Assert.IsFalse(ReferenceEquals(instance, null));
         }

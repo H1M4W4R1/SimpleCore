@@ -109,12 +109,9 @@ namespace Systems.SimpleCore.Editor.Utility
             for (int groupIndex = settings.groups.Count - 1; groupIndex >= 0; groupIndex--)
             {
                 AddressableAssetGroup group = settings.groups[groupIndex];
-                if (ReferenceEquals(group, null) || !group)
-                {
-                    settings.groups.RemoveAt(groupIndex);
-                    changesDetected = true;
-                    continue;
-                }
+                if (!ReferenceEquals(group, null) && group) continue;
+                settings.groups.RemoveAt(groupIndex);
+                changesDetected = true;
             }
 
             if (!changesDetected) return false;
