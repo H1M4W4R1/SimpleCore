@@ -102,6 +102,7 @@ namespace Systems.SimpleCore.Storage.Databases
             if (_isLoading) return;
             _isLoading = true;
             _isLoadingComplete = false;
+            _isLoaded = false;
 
             // Load items
             try
@@ -141,8 +142,16 @@ namespace Systems.SimpleCore.Storage.Databases
             if (!_isLoadingComplete) OnItemsLoadComplete(_loadRequest);
         }
 
-        private void OnItemsLoadComplete(AsyncOperationHandle<IList<TLoadType>> _)
+        private void OnItemsLoadComplete(AsyncOperationHandle<IList<TLoadType>> loadRequest)
         {
+            if (loadRequest.Status != AsyncOperationStatus.Succeeded)
+            {
+                _isLoaded = false;
+                _isLoading = false;
+                _isLoadingComplete = true;
+                return;
+            }
+
             // Sort after loading to ensure binary search works correctly
             internalDataStorage.Sort((a, b) => a.hashIdentifier.CompareTo(b.hashIdentifier));
             _isLoaded = true;
@@ -200,7 +209,7 @@ namespace Systems.SimpleCore.Storage.Databases
         /// </remarks>
         [CanBeNull] public static TItemType GetExact<TItemType>()
             where TItemType : TUnityObject, new() =>
-            GetFirstFast<TItemType>();
+            GetFirstFast<TItemType>(true);
 
         /// <summary>
         ///     Gets first item of specified type. 
@@ -209,7 +218,7 @@ namespace Systems.SimpleCore.Storage.Databases
         /// <returns>First item of specified type or null if no item of specified type is found</returns>
         [CanBeNull] public static TItemType GetAny<TItemType>()
             where TItemType : TUnityObject =>
-            GetFirstFast<TItemType>();
+            GetFirstFast<TItemType>(false);
 
         /// <summary>
         ///     Gets all items of specified type. 
@@ -236,7 +245,7 @@ namespace Systems.SimpleCore.Storage.Databases
             List<TItemType> refList = list.List;
 
             // Get first item
-            int firstItem = GetFirstIndexFast<TItemType>();
+            int firstItem = GetFirstIndexFast<TItemType>(false);
             if (firstItem == -1) return list.ToReadOnly();
             
             // Forward scan by runtime type is correct here. HashIdentifier does not support
@@ -255,19 +264,18 @@ namespace Systems.SimpleCore.Storage.Databases
         /// </summary>
         /// <typeparam name="TItemType">Type of item to get</typeparam>
         /// <returns>Item with given identifier or null if not found</returns>
-        [CanBeNull] private static TItemType GetFirstFast<TItemType>()
+        [CanBeNull] private static TItemType GetFirstFast<TItemType>(bool requireExactType)
             where TItemType : TUnityObject
         {
-            int foundItem = GetFirstIndexFast<TItemType>();
+            int foundItem = GetFirstIndexFast<TItemType>(requireExactType);
 
             // Prevent out of bounds
             if (foundItem == -1) return null;
 
-            // Return item
             return internalDataStorage[foundItem].entryObject as TItemType;
         }
 
-        private static int GetFirstIndexFast<TItemType>()
+        private static int GetFirstIndexFast<TItemType>(bool requireExactType)
         {
             _instance.EnsureLoaded();
             HashIdentifier hashIdentifier = HashIdentifier.New(typeof(TItemType));
@@ -300,22 +308,23 @@ namespace Systems.SimpleCore.Storage.Databases
             // If not found, return null
             if (foundMid == -1) return -1;
 
-            // Run backward until first item of this exact type is found.
-            // NOTE: This intentionally checks runtime type (is TItemType) rather than HashIdentifier,
-            // because HashIdentifier does not support inheritance. Items are registered per exact type
-            // and per base type with separate hashes, so matching by runtime type within the hash
-            // cluster is the correct behaviour here.
-            while (foundMid >= 0 && internalDataStorage[foundMid].entryObject is TItemType) foundMid--;
+            // Find the first entry in the matching hash cluster. Entries in the cluster can be
+            // aliases for derived assets, so runtime type checks must be performed explicitly.
+            while (foundMid > 0 &&
+                   internalDataStorage[foundMid - 1].hashIdentifier.CompareTo(hashIdentifier) == 0)
+                foundMid--;
 
-            foundMid++;
+            for (int index = foundMid;
+                 index < internalDataStorage.Count &&
+                 internalDataStorage[index].hashIdentifier.CompareTo(hashIdentifier) == 0;
+                 index++)
+            {
+                TUnityObject entryObject = internalDataStorage[index].entryObject;
+                if (requireExactType && entryObject.GetType() != typeof(TItemType)) continue;
+                if (entryObject is TItemType) return index;
+            }
 
-            // If not found, return null
-            if (foundMid >= internalDataStorage.Count) return -1;
-
-            // Validate the resolved index actually contains the requested type (guards against hash collisions)
-            if (internalDataStorage[foundMid].entryObject is not TItemType) return -1;
-
-            return foundMid;
+            return -1;
         }
     }
 }
