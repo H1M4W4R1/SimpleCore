@@ -6,6 +6,7 @@ A high-performance, lightweight foundational library for Unity projects. SimpleC
 
 - **Identifiers**: Type-safe, performant ID systems (8, 16, 32, 64, 128, 256, 512-bit variants, Snowflake128, HashIdentifier)
 - **Input System**: Wrapper layer for Unity's InputSystem with rebinding support and input device management
+- **Example UI helpers**: Shared runtime Unity UI panel builder used by package example scenes
 - **Save/Load System**: Generic save file abstraction supporting multiple file formats with upgrade/downgrade transitions
 - **Asset Storage**: Addressable asset databases with lazy-loading and ID-based lookups
 - **Tick System**: Global timing system for frame-rate independent updates
@@ -23,6 +24,7 @@ A high-performance, lightweight foundational library for Unity projects. SimpleC
 - **Unity.Collections** - For NativeCollections support
 - **Unity.Mathematics** - For high-performance math operations
 - **Unity.InputSystem** - For input handling
+- **Unity.ugui** - For shared runtime example UI helpers
 - **Unity.ResourceManager** - Dependency of Addressables
 
 ### C# Features
@@ -241,6 +243,7 @@ float3 rotated = MathExtensions.Rotate(vec3, new float3(0, 1, 0), math.PI / 2);
 - **Storage/** - Addressable databases and list access structures
 - **Timing/** - Global tick system for updates
 - **Utility/** - Helper functions and extensions
+- **Examples/** - Runtime Unity UI helpers shared by package example scenes
 - **Tests/EditMode/** - Editor-only Unity Test Framework coverage for core runtime APIs
 
 ### Key Patterns

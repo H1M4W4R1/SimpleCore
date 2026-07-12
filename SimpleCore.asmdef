@@ -7,6 +7,7 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.InputSystem",
+        "Unity.ugui",
         "Unity.ResourceManager"
     ],
     "includePlatforms": [],
