@@ -28,6 +28,11 @@ namespace Systems.SimpleCore.Examples
 
         public static ExampleRuntimePanel Create(string title, string subtitle)
         {
+            return Create(title, subtitle, new Vector2(32f, 0f));
+        }
+
+        public static ExampleRuntimePanel Create(string title, string subtitle, Vector2 panelAnchoredPosition)
+        {
             EnsureEventSystem();
 
             GameObject canvasObject = new GameObject(title + " UI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -40,7 +45,7 @@ namespace Systems.SimpleCore.Examples
             scaler.matchWidthOrHeight = 0.5f;
 
             ExampleRuntimePanel panel = canvasObject.AddComponent<ExampleRuntimePanel>();
-            panel.Build(title, subtitle);
+            panel.Build(title, subtitle, panelAnchoredPosition);
             return panel;
         }
 
@@ -108,7 +113,7 @@ namespace Systems.SimpleCore.Examples
                    " user " + result.userCode;
         }
 
-        private void Build(string title, string subtitle)
+        private void Build(string title, string subtitle, Vector2 panelAnchoredPosition)
         {
             _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (ReferenceEquals(_font, null))
@@ -120,7 +125,7 @@ namespace Systems.SimpleCore.Examples
             panel.anchorMin = new Vector2(0f, 0.5f);
             panel.anchorMax = new Vector2(0f, 0.5f);
             panel.pivot = new Vector2(0f, 0.5f);
-            panel.anchoredPosition = new Vector2(32f, 0f);
+            panel.anchoredPosition = panelAnchoredPosition;
             panel.sizeDelta = new Vector2(PANEL_WIDTH, 0f);
 
             Image panelImage = panel.gameObject.AddComponent<Image>();

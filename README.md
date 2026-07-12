@@ -73,6 +73,22 @@ Debug.Log($"Jump is bound to: {displayName}");
 bool rebindStarted = InputAPI.Rebind(jumpActionRef, InputDeviceType.Keyboard);
 ```
 
+### Example Runtime UI
+
+Package examples use `ExampleRuntimePanel` to create lightweight uGUI controls during Play Mode:
+
+```csharp
+ExampleRuntimePanel panel = ExampleRuntimePanel.Create(
+    "Example",
+    "Runtime controls for the package example.",
+    new Vector2(32f, 0f));
+
+Button runButton = panel.AddButton("Run Example");
+runButton.onClick.AddListener(RunExample);
+```
+
+Use the overload with `Vector2 panelAnchoredPosition` when a scene needs more than one panel.
+
 ### Save/Load System
 
 Implement saveable objects with custom file formats. Define a save file type and a class that implements `ISaveData<T>`:
